@@ -1,0 +1,42 @@
+{
+  "name": "spatial-indonesia-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "REST API + dashboard admin untuk situs tata surya Spatial Indonesia",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "migrate": "node scripts/migrate.js up",
+    "migrate:status": "node scripts/migrate.js status",
+    "migrate:down": "node scripts/migrate.js down",
+    "seed": "node scripts/seed.js",
+    "db:reset": "node scripts/migrate.js reset && node scripts/seed.js",
+    "admin:create": "node scripts/create-admin.js",
+    "schema:dump": "node scripts/dump-schema.js",
+    "test": "node --test --test-concurrency=1 'test/**/*.test.js'",
+    "test:unit": "node --test 'test/unit/*.test.js'"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "compression": "^1.7.4",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.4.1",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.2.0",
+    "pg": "^8.13.1",
+    "pino": "^9.5.0",
+    "pino-http": "^10.3.0",
+    "quill": "^2.0.3",
+    "sanitize-html": "^2.13.1",
+    "swagger-ui-express": "^5.0.1",
+    "zod": "^3.23.8"
+  }
+}

@@ -1,0 +1,83 @@
+# Backend + PostgreSQL untuk satu mesin.
+#
+# Cocok untuk VPS, server kantor, atau mencoba di laptop. Kalau databasenya
+# dikelola pihak lain (Railway, Neon, Supabase, RDS), hapus layanan `db`,
+# arahkan DATABASE_URL ke sana, dan pakai berkas ini hanya untuk `api`.
+#
+#   cp .env.example .env      lalu isi rahasianya
+#   docker compose up -d --build
+#   docker compose exec api npm run seed
+#
+# Frontend TIDAK ada di sini. Ia berkas statis yang dilayani terpisah — lihat
+# DEPLOYMENT.md.
+
+name: spatial-indonesia
+
+services:
+  db:
+    # Versi mayor dikunci. Postgres tidak bisa membaca direktori data dari
+    # mayor yang berbeda, jadi `postgres:latest` suatu hari akan menolak
+    # menyala setelah pull rutin — dengan data yang masih utuh tapi tidak
+    # terbaca. Samakan dengan versi tempat cadangan Anda dibuat.
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-spatial_indonesia}
+      POSTGRES_USER: ${POSTGRES_USER:-spatial_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD wajib diisi di .env}
+      # Kesalahan encoding baru terasa saat ada judul artikel ber-aksen.
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # `api` menunggu ini hijau sebelum menyala. Tanpa itu, migrasi berjalan
+      # saat Postgres masih membuka soketnya dan container langsung mati.
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-spatial_app} -d ${POSTGRES_DB:-spatial_indonesia}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    # Tidak ada `ports:`. Database tidak perlu terjangkau dari luar mesin —
+    # `api` mencapainya lewat jaringan internal compose. Buka hanya kalau Anda
+    # butuh psql dari laptop, dan sebaiknya lewat SSH tunnel.
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # Menimpa apa pun yang ada di .env. Di dalam compose, host databasenya
+      # bernama `db`, bukan localhost — dan .env yang dipakai untuk
+      # pengembangan lokal hampir pasti menunjuk ke localhost.
+      DATABASE_URL: postgres://${POSTGRES_USER:-spatial_app}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-spatial_indonesia}
+      NODE_ENV: production
+      PORT: 4000
+      # Migrasi dijalankan entrypoint sebelum server menyala. Matikan kalau
+      # Anda menjalankan lebih dari satu replika — lihat catatan di
+      # docker/entrypoint.sh.
+      RUN_MIGRATIONS: "true"
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      # Hanya ke loopback. Yang menghadap internet adalah reverse proxy di
+      # depannya, bukan Node — lihat DEPLOYMENT.md §4.
+      - "127.0.0.1:4000:4000"
+    volumes:
+      # Berkas unggahan admin. Tanpa volume ini, seluruh gambar hilang setiap
+      # kali container diganti — dan penggantian container adalah cara normal
+      # memperbarui aplikasi.
+      - uploads:/app/uploads
+    logging:
+      # Log pino berupa JSON satu baris. Tanpa batas, berkasnya tumbuh sampai
+      # disk penuh — kegagalan yang selalu datang di waktu yang paling buruk.
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+volumes:
+  pgdata:
+  uploads:

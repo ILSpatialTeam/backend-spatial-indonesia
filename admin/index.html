@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Dashboard — Spatial Indonesia</title>
+  <link rel="stylesheet" href="/admin/vendor/quill/quill.snow.css" />
+  <link rel="stylesheet" href="/admin/css/app.css" />
+</head>
+<body>
+  <div id="akar">
+    <div class="masuk"><p class="redup">Memuat dashboard…</p></div>
+  </div>
+
+  <!-- Quill dimuat sebagai skrip klasik: pustakanya memasang window.Quill, dan
+       berkasnya dilayani dari node_modules lewat /admin/vendor/quill — tidak
+       ada CDN, jadi CSP tidak perlu mengizinkan host luar sama sekali. -->
+  <script src="/admin/vendor/quill/quill.js"></script>
+  <script type="module" src="/admin/js/app.js"></script>
+</body>
+</html>

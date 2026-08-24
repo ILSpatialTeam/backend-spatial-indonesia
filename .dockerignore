@@ -1,0 +1,28 @@
+# Yang TIDAK ikut ke dalam image.
+#
+# node_modules dikecualikan bukan sekadar demi ukuran: modul yang dipasang di
+# macOS bisa membawa biner yang tidak jalan di Linux. Image memasangnya sendiri
+# dari package-lock.json, di dalam Linux yang sama dengan tempatnya berjalan.
+node_modules
+npm-debug.log
+
+# Rahasia tidak pernah masuk image. Konfigurasi disuntikkan saat container
+# berjalan — kalau ikut ter-bake, siapa pun yang bisa menarik image-nya
+# mendapatkan kredensial produksi.
+.env
+.env.*
+!.env.example
+
+# Berkas unggahan adalah data, bukan kode. Ia hidup di volume.
+uploads/*
+!uploads/.gitkeep
+
+# Tidak dibutuhkan saat runtime.
+test
+.git
+.gitignore
+*.md
+!README.md
+Dockerfile
+.dockerignore
+docker-compose*.yml
