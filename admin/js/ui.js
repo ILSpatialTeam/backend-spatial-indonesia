@@ -82,7 +82,8 @@ const IKON = {
   buku: 'M4 5a1 1 0 0 1 1-1h5a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H5a1 1 0 0 1-1-1ZM20 5a1 1 0 0 0-1-1h-5a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h5a1 1 0 0 0 1-1Z',
   // Kubah langit dengan satu bintang di dalamnya — bukan bintang lima sudut,
   // supaya tidak tertukar dengan ikon "favorit" yang lazim di tempat lain.
-  langit: 'M3 18a9 9 0 0 1 18 0M3 18h18M12 7.5l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9ZM6.5 13.5h.01M17.5 13.5h.01'
+  langit: 'M3 18a9 9 0 0 1 18 0M3 18h18M12 7.5l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9ZM6.5 13.5h.01M17.5 13.5h.01',
+  hamburger: 'M4 6h16M4 12h16M4 18h16'
 };
 
 const NS_SVG = 'http://www.w3.org/2000/svg';

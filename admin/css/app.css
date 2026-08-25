@@ -888,23 +888,167 @@ option { background: #17151f; color: var(--kertas); }
 ::-webkit-scrollbar-thumb { background: rgba(158, 148, 249, .2); border-radius: 999px; border: 3px solid transparent; background-clip: content-box; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(158, 148, 249, .38); background-clip: content-box; }
 
+/* ── tombol hamburger & tabir mobile ──────────────────────────────────────── */
+.sisi-toggle { display: none; }
+.sisi-tabir {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 79;
+  background: rgba(5, 4, 9, .6);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  opacity: 0;
+  transition: opacity .28s;
+  pointer-events: none;
+}
+.sisi-tabir.sisi-tabir-buka {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 /* ── layar sempit ─────────────────────────────────────────────────────────── */
 @media (max-width: 980px) {
+  .sisi-toggle { display: grid; }
+  .sisi-tabir { display: block; }
+
   .kerangka { grid-template-columns: 1fr; padding: 10px; gap: 10px; }
-  .sisi { position: static; height: auto; gap: 16px; }
-  .nav { flex-direction: row; flex-wrap: wrap; gap: 6px; }
-  .nav-item { padding: 6px 12px 6px 6px; }
-  /* Garis penanda tepi tidak masuk akal saat menunya berbaris menyamping. */
+
+  .sisi {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    height: 100vh;
+    width: 280px;
+    border-radius: 0 var(--r-besar) var(--r-besar) 0;
+    transform: translateX(-100%);
+    transition: transform .28s var(--lentur), opacity .28s;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .sisi.sisi-buka {
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .nav { flex-direction: column; gap: 3px; }
   .nav-item.aktif::before { display: none; }
-  .isi { padding: 20px 16px 40px; }
-  .topbar { padding: 10px 12px; }
+
+  .isi { padding: 20px 14px 40px; }
+  .topbar { padding: 10px 12px; gap: 8px; }
   .pengguna-teks { display: none; }
+  .pengguna { padding: 3px; margin-left: 0; border: none; background: transparent; }
+
   .baris-2, .baris-3 { grid-template-columns: 1fr; }
-  .butir, .butir-2 { grid-template-columns: 1fr; }
-  .hero { padding: 24px 20px; }
-  .hero h1 { font-size: 26px; }
+  .butir { grid-template-columns: 1fr; }
+  .butir-2 { grid-template-columns: 1fr; }
+
+  .hero { padding: 22px 18px; }
+  .hero h1 { font-size: 24px; }
+  .hero::after { width: 200px; height: 200px; right: -80px; top: -60px; }
+
+  .halaman-kepala { flex-direction: column; gap: 12px; }
+  .halaman-kepala > select.kendali,
+  .halaman-kepala select { width: 100%; min-width: 0; }
+
+  .stat-kisi { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat-nilai { font-size: 26px; }
+  .stat { padding: 16px; }
+
+  .kartu-kisi { grid-template-columns: 1fr; }
+
   .drawer-lapis { padding: 0; }
-  .drawer { border-radius: 0; }
+  .drawer { border-radius: 0; width: 100%; max-width: 100%; }
+  .drawer-kepala { padding: 16px; }
+  .drawer-isi { padding: 16px; }
+
+  .modal-kecil { width: 94vw; }
+
+  .pantau-kolom { grid-template-columns: 1fr; }
+  .pantau-status { flex-direction: column; gap: 14px; }
+  .acara-sorot { flex-direction: column; align-items: flex-start; gap: 14px; }
+
+  .tabel-bungkus { border-radius: var(--r-kecil); }
+  .tabel th { padding: 10px 12px; font-size: 10px; }
+  .tabel td { padding: 10px 12px; font-size: 12.5px; }
+
+  .saring { flex-direction: column; }
+  .saring .kendali { max-width: 100%; }
+
+  .form-aksi { flex-wrap: wrap; }
+
+  .toast-wrap { right: 10px; bottom: 10px; left: 10px; }
+  .toast { max-width: 100%; }
+
+  .lg-peta { height: 140px; }
+
+  .pilih-bahasa { display: none; }
+  .topbar-aksi { gap: 6px; }
+  .topbar-aksi .ikon-btn:not(.ikon-btn-keluar) { display: none; }
+
+  .jejak-nav { font-size: 12px; gap: 6px; min-width: 0; }
+  .jejak-akar { display: none; }
+  .jejak-pisah { display: none; }
+}
+
+@media (max-width: 480px) {
+  .kerangka { padding: 6px; gap: 6px; }
+  .topbar { padding: 8px 10px; border-radius: 16px; gap: 6px; }
+  .isi { padding: 14px 10px 32px; border-radius: 16px; }
+
+  .sisi-toggle { width: 30px; height: 30px; border-radius: 9px; }
+  .ikon-btn { width: 30px; height: 30px; border-radius: 9px; }
+
+  .jejak-kini { font-size: 12px; gap: 5px; }
+  .jejak-kini::before { width: 6px; height: 6px; }
+
+  .stat-kisi { grid-template-columns: 1fr; }
+  .stat-nilai { font-size: 22px; }
+  .stat { padding: 14px; }
+
+  .hero { padding: 18px 16px; }
+  .hero h1 { font-size: 20px; }
+  .hero p { font-size: 12px; }
+  .hero::after { display: none; }
+
+  .halaman-kepala h1 { font-size: 18px; }
+  h1 { font-size: 18px; }
+
+  .sisi { width: 100%; border-radius: 0; }
+
+  .acara-hitung { width: 68px; height: 68px; }
+  .acara-angka { font-size: 20px; }
+
+  .tabel .aksi-baris { flex-wrap: wrap; }
+  .tabel .aksi-baris .btn { font-size: 11px; padding: 4px 8px; }
+  .tabel th { padding: 8px 10px; font-size: 9.5px; }
+  .tabel td { padding: 8px 10px; font-size: 12px; }
+
+  .pilih-bar { flex-direction: column; gap: 10px; }
+
+  .panel { padding: 16px; }
+  .panel-kepala { flex-direction: column; gap: 8px; align-items: flex-start; }
+  .panel-kepala h2 { font-size: 13.5px; }
+
+  .kartu { padding: 16px; }
+  .kartu-atas { padding: 14px 16px 10px; }
+
+  .btn { padding: 8px 14px; font-size: 12px; }
+  .btn-utama { padding: 10px 16px; }
+
+  .form { gap: 14px; }
+  .kendali { padding: 9px 11px; font-size: 13px; }
+
+  .db-kisi { grid-template-columns: 1fr 1fr; }
+
+  .avatar { width: 26px; height: 26px; font-size: 10px; }
+
+  .masuk-kartu { padding: 28px 22px 24px; border-radius: 20px; }
+  .masuk-kartu h1 { font-size: 18px; }
+
+  .draf-pulih { flex-direction: column; gap: 10px; }
+  .draf-pulih span { min-width: 0; }
 }
 
 /* ── gerak dikurangi ──────────────────────────────────────────────────────
@@ -1165,10 +1309,7 @@ option { background: #17151f; color: var(--kertas); }
 .ubah-panah { color: var(--samar); }
 .ubah-jadi { color: #cfe9e3; }
 
-@media (max-width: 980px) {
-  .pantau-kolom { grid-template-columns: 1fr; }
-  .pantau-status { gap: 16px; }
-}
+/* pantau-kolom dan pantau-status responsif sudah ditangani di blok utama */
 
 /* ══════════════════════════════════════════════════════════════════════════
  * Aksesibilitas, editor, dan aksi massal

@@ -162,9 +162,41 @@ function layarUtama() {
 
   const avatar = el('span', { class: 'avatar' }, inisial(aku.name));
 
+  const sisiEl = el(
+    'aside',
+    { class: 'sisi' },
+    el('a', { class: 'merek', href: '#/' },
+      el('span', { class: 'merek-orb' }),
+      el('span', { class: 'merek-teks' },
+        el('strong', {}, 'Spatial Indonesia'),
+        el('em', {}, t('shell.merek')))),
+    navEl,
+    el('div', { class: 'sisi-kaki' },
+      el('span', { class: 'sisi-kaki-titik' }),
+      el('span', {}, t('shell.sistemNormal')))
+  );
+
+  const tabir = el('div', { class: 'sisi-tabir', onclick: () => tutupSisi() });
+  const tutupSisi = () => {
+    sisiEl.classList.remove('sisi-buka');
+    tabir.classList.remove('sisi-tabir-buka');
+  };
+
+  sisiEl.addEventListener('click', (e) => {
+    if (e.target.closest('.nav-item')) tutupSisi();
+  });
+
   const topbar = el(
     'header',
     { class: 'topbar' },
+    el('button', {
+      class: 'ikon-btn sisi-toggle',
+      'aria-label': 'Menu',
+      onclick: () => {
+        const buka = sisiEl.classList.toggle('sisi-buka');
+        tabir.classList.toggle('sisi-tabir-buka', buka);
+      }
+    }, ikon('hamburger')),
     jejakEl,
     el('div', { class: 'topbar-aksi' },
       // Ganti bahasa menggambar ulang seluruh shell: label navigasi, breadcrumb,
@@ -197,24 +229,7 @@ function layarUtama() {
     // hal paling melelahkan bagi pengguna papan tik.
     el('a', { class: 'lewati', href: '#isi',
       onclick: (e) => { e.preventDefault(); isi.focus(); } }, t('shell.lewati')),
-    el(
-      'div',
-      { class: 'kerangka' },
-      el(
-        'aside',
-        { class: 'sisi' },
-        el('a', { class: 'merek', href: '#/' },
-          el('span', { class: 'merek-orb' }),
-          el('span', { class: 'merek-teks' },
-            el('strong', {}, 'Spatial Indonesia'),
-            el('em', {}, t('shell.merek')))),
-        navEl,
-        el('div', { class: 'sisi-kaki' },
-          el('span', { class: 'sisi-kaki-titik' }),
-          el('span', {}, t('shell.sistemNormal')))
-      ),
-      el('div', { class: 'utama' }, topbar, isi)
-    )
+    el('div', { class: 'kerangka' }, tabir, sisiEl, el('div', { class: 'utama' }, topbar, isi))
   );
 
   const gambar = async () => {
