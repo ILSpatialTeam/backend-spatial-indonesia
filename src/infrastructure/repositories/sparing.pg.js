@@ -44,7 +44,7 @@ export class PgSparingRepository extends SparingRepository {
     return Object.fromEntries(rows.map((r) => [r.slug, r.list]));
   }
 
-  async listForModeration({ status = 'pending', limit = 100, offset = 0 } = {}) {
+  async listForModeration({ status = null, limit = 100, offset = 0 } = {}) {
     const { rows } = await this.db.query(
       `SELECT s.*, a.slug AS article_slug, a.title AS article_title,
               count(*) OVER () AS total_rows

@@ -1,7 +1,7 @@
 // Controller dashboard. Sama tipisnya dengan yang publik; semua keputusan ada
 // di service. Yang khas di sini cuma satu: `req.actor` selalu diteruskan,
 // karena setiap perubahan harus tercatat siapa yang melakukannya.
-export function makeAdminController({ menuAdmin, articleAdmin, curation, userAdmin, media, monitoring, sky, team, cache }) {
+export function makeAdminController({ menuAdmin, articleAdmin, curation, userAdmin, media, monitoring, sky, team, program, project, cache }) {
   return {
     // ── ringkasan ─────────────────────────────────────────────────────────
     async dashboard(req, res) {
@@ -193,6 +193,60 @@ export function makeAdminController({ menuAdmin, articleAdmin, curation, userAdm
     async teamReorder(req, res) {
       await team.reorder(req.body.order, req.actor);
       res.json({ ok: true });
+    },
+
+    // ── program ──────────────────────────────────────────────────────────
+    async programList(req, res) {
+      res.json(await program.listAll());
+    },
+    async programGet(req, res) {
+      res.json(await program.get(req.params.id));
+    },
+    async programCreate(req, res) {
+      res.status(201).json(await program.create(req.body, req.actor));
+    },
+    async programUpdate(req, res) {
+      res.json(await program.update(req.params.id, req.body, req.actor));
+    },
+    async programDelete(req, res) {
+      await program.remove(req.params.id, req.actor);
+      res.status(204).end();
+    },
+    async programReorder(req, res) {
+      await program.reorder(req.body.order, req.actor);
+      res.json({ ok: true });
+    },
+
+    // ── proyek karya ────────────────────────────────────────────────────
+    async projectList(req, res) {
+      res.json(await project.listAll());
+    },
+    async projectGet(req, res) {
+      res.json(await project.get(req.params.id));
+    },
+    async projectCreate(req, res) {
+      res.status(201).json(await project.create(req.body, req.actor));
+    },
+    async projectUpdate(req, res) {
+      res.json(await project.update(req.params.id, req.body, req.actor));
+    },
+    async projectDelete(req, res) {
+      await project.remove(req.params.id, req.actor);
+      res.status(204).end();
+    },
+    async projectReorder(req, res) {
+      await project.reorder(req.body.order, req.actor);
+      res.json({ ok: true });
+    },
+    async projectCategoryList(req, res) {
+      res.json(await project.categoryList());
+    },
+    async projectCategoryUpsert(req, res) {
+      res.json(await project.categoryUpsert(req.body, req.actor));
+    },
+    async projectCategoryDelete(req, res) {
+      await project.categoryRemove(req.params.id, req.actor);
+      res.status(204).end();
     },
 
     // ── perkakas ──────────────────────────────────────────────────────────

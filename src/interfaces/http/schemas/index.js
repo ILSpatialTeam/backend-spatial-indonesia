@@ -208,6 +208,41 @@ export const teamUpdateBody = teamCreateBody.partial();
 
 export const teamReorderBody = z.object({ order: z.array(uuid).min(1).max(50) });
 
+// ── program (admin) ────────────────────────────────────────────────────────
+export const programCreateBody = z.object({
+  title: z.string().trim().min(2, 'Judul minimal 2 huruf.').max(120),
+  subtitle: z.string().trim().max(80).optional().default(''),
+  description: z.string().trim().max(600).optional().default(''),
+  sortOrder: z.coerce.number().int().min(0).max(100).default(0),
+  isActive: z.boolean().default(true)
+});
+
+export const programUpdateBody = programCreateBody.partial();
+
+export const programReorderBody = z.object({ order: z.array(uuid).min(1).max(50) });
+
+// ── proyek karya (admin) ───────────────────────────────────────────────────
+export const projectCategoryBody = z.object({
+  id: idSlug.optional(),
+  label: z.string().trim().min(1).max(60),
+  sortOrder: z.number().int().min(0).max(100).optional()
+});
+
+export const projectCreateBody = z.object({
+  title: z.string().trim().min(2, 'Judul minimal 2 huruf.').max(200),
+  description: z.string().trim().max(2000).optional().default(''),
+  memberName: z.string().trim().min(2, 'Nama anggota minimal 2 huruf.').max(80),
+  imageUrl: z.string().url().max(500).nullish(),
+  categoryId: idSlug.nullish(),
+  type: z.string().trim().max(40).optional().default(''),
+  sortOrder: z.coerce.number().int().min(0).max(100).default(0),
+  isActive: z.boolean().default(true)
+});
+
+export const projectUpdateBody = projectCreateBody.partial();
+
+export const projectReorderBody = z.object({ order: z.array(uuid).min(1).max(50) });
+
 // ── moderasi & lainnya ──────────────────────────────────────────────────────
 export const moderationQuery = pagination.extend({
   status: z.enum(['pending', 'approved', 'rejected']).optional()

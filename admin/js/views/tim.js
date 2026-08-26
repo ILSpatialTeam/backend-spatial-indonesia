@@ -5,6 +5,43 @@ import {
 } from '../ui.js';
 import { t } from '../i18n.js';
 
+function bidangFoto(urlAwal) {
+  let url = urlAwal ?? '';
+  const pratinjau = el('div', {
+    style: 'width:80px;height:107px;border-radius:6px;background:rgba(243,242,248,.06);background-size:cover;background-position:center top;overflow:hidden;flex-shrink:0;'
+  });
+  if (url) pratinjau.style.backgroundImage = `url(${url})`;
+
+  const berkas = el('input', { type: 'file', accept: 'image/jpeg,image/png,image/webp,image/gif,image/avif', style: 'display:none;' });
+  const tombol = el('button', { type: 'button', class: 'btn btn-kecil' }, url ? t('tim.form.fotoGanti') : t('tim.form.fotoPilih'));
+  tombol.addEventListener('click', () => berkas.click());
+
+  berkas.addEventListener('change', async () => {
+    const file = berkas.files?.[0];
+    if (!file) return;
+    tombol.textContent = t('tim.form.fotoMengunggah');
+    tombol.disabled = true;
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const hasil = await api.upload('/admin/media', fd);
+      url = hasil.url;
+      pratinjau.style.backgroundImage = `url(${url})`;
+      tombol.textContent = t('tim.form.fotoGanti');
+    } catch (err) {
+      toastGalat(err);
+      tombol.textContent = url ? t('tim.form.fotoGanti') : t('tim.form.fotoPilih');
+    } finally {
+      tombol.disabled = false;
+      berkas.value = '';
+    }
+  });
+
+  const bungkus = el('div', { style: 'display:flex;gap:12px;align-items:flex-end;' }, pratinjau, el('div', {}, tombol));
+
+  return { node: bungkus, getUrl: () => url || null };
+}
+
 export async function tampilanTim(wadah) {
   const isi = el('div');
 
@@ -70,12 +107,12 @@ function bukaAnggota(anggota, setelahSimpan) {
   const form = el('form', { class: 'form' });
   const { tutup } = drawer(baru ? t('tim.form.baru') : t('tim.form.sunting', { nama: anggota.name }), form);
   const v = anggota ?? { name: '', role: '', photo_url: '', sort_order: 0, is_active: true };
+  const foto = bidangFoto(v.photo_url);
 
   pasang(form,
     bidang(t('tim.form.nama'), input({ name: 'name', value: v.name, required: true }), { nama: 'name' }),
     bidang(t('tim.form.peran'), input({ name: 'role', value: v.role, required: true }), { nama: 'role' }),
-    bidang(t('tim.form.foto'), input({ name: 'photoUrl', type: 'url', value: v.photo_url ?? '' }),
-      { nama: 'photoUrl', petunjuk: t('tim.form.fotoPetunjuk') }),
+    bidang(t('tim.form.foto'), foto.node, { nama: 'photoUrl', petunjuk: t('tim.form.fotoPetunjuk') }),
     el('div', { class: 'baris-2' },
       bidang(t('tim.form.urutan'), input({ name: 'sortOrder', type: 'number', value: v.sort_order, min: 0, max: 100 }),
         { nama: 'sortOrder' }),
@@ -95,7 +132,7 @@ function bukaAnggota(anggota, setelahSimpan) {
     const muatan = {
       name: d.get('name'),
       role: d.get('role'),
-      photoUrl: d.get('photoUrl') || null,
+      photoUrl: foto.getUrl(),
       sortOrder: Number(d.get('sortOrder')) || 0,
       isActive: d.get('isActive') === 'true'
     };

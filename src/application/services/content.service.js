@@ -11,7 +11,7 @@ import { TAG } from '../../infrastructure/cache/memory-cache.js';
 // dari infrastructure/ — itu yang membuat service ini bisa diuji dengan
 // repositori palsu dan tidak tahu-menahu soal Postgres.
 export class ContentService {
-  constructor({ menus, articles, taxonomy, sparings, agenda, presence, settings, team, cache }) {
+  constructor({ menus, articles, taxonomy, sparings, agenda, presence, settings, team, programs, projects, cache }) {
     this.menus = menus;
     this.articles = articles;
     this.taxonomy = taxonomy;
@@ -20,6 +20,8 @@ export class ContentService {
     this.presence = presence;
     this.settings = settings;
     this.team = team;
+    this.programs = programs;
+    this.projects = projects;
     this.cache = cache;
   }
 
@@ -50,19 +52,21 @@ export class ContentService {
   async bootstrap() {
     return this.cache.wrap(
       'bootstrap',
-      { tags: [TAG.menu, TAG.article, TAG.taxonomy, TAG.agenda, TAG.sparing, TAG.settings, TAG.team], ttlMs: 120_000 },
+      { tags: [TAG.menu, TAG.article, TAG.taxonomy, TAG.agenda, TAG.sparing, TAG.settings, TAG.team, TAG.program, TAG.project], ttlMs: 120_000 },
       async () => {
         const freshDays = await this._freshDays();
         // Dijalankan berbarengan: tidak ada yang bergantung pada hasil yang
         // lain, jadi menjalankannya berurutan hanya menjumlahkan latensinya.
-        const [menus, kategori, frekuensi, artikel, acara, sparing, tim] = await Promise.all([
+        const [menus, kategori, frekuensi, artikel, acara, sparing, tim, programList, projectList] = await Promise.all([
           this.menus.listActive(),
           this.taxonomy.listCategories(),
           this.taxonomy.listFrequencies(),
           this.articles.listPublished({ limit: 100 }),
           this.agenda.listPublished(),
           this.sparings.listApprovedGrouped(),
-          this.team.listActive()
+          this.team.listActive(),
+          this.programs.listActive(),
+          this.projects.listActive()
         ]);
 
         const planets = menus.filter((m) => m.kind === 'planet').map(toPlanetShape);
@@ -85,6 +89,14 @@ export class ContentService {
           team: tim.map((m) => ({
             id: m.id, name: m.name, role: m.role,
             photoUrl: m.photo_url, sortOrder: m.sort_order
+          })),
+          programs: programList.map((p) => ({
+            id: p.id, title: p.title, subtitle: p.subtitle, description: p.description
+          })),
+          projects: projectList.map((p) => ({
+            id: p.id, title: p.title, description: p.description,
+            memberName: p.member_name, imageUrl: p.image_url,
+            category: p.category_label ?? null, type: p.type
           })),
           generatedAt: new Date().toISOString()
         };

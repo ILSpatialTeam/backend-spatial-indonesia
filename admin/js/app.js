@@ -9,6 +9,8 @@ import { tampilanSparing, tampilanPendaftaran, tampilanLangit } from './views/mo
 import { tampilanTaksonomi, tampilanPengaturan, tampilanAkun, tampilanAudit } from './views/pengaturan.js';
 import { tampilanPemantauan, tampilanKejadian } from './views/pemantauan.js';
 import { tampilanTim } from './views/tim.js';
+import { tampilanProgram } from './views/program.js';
+import { tampilanProyek } from './views/proyek.js';
 
 // Kerangka dashboard: login, navigasi, dan perutean berbasis hash.
 //
@@ -26,23 +28,26 @@ import { tampilanTim } from './views/tim.js';
 // dan tidak ikut berubah ketika pengguna berpindah bahasa.
 const HALAMAN = [
   { id: '', kunci: 'nav.beranda', ikon: 'beranda', warna: '#9E94F9', render: tampilanBeranda },
-  { id: 'menu', kunci: 'nav.menu', ikon: 'menu', warna: '#a99bf2', render: tampilanMenu },
-  { id: 'artikel', kunci: 'nav.artikel', ikon: 'artikel', warna: '#5ad1c0', render: tampilanArtikel },
-  { id: 'agenda', kunci: 'nav.agenda', ikon: 'agenda', warna: '#f3f2f8', render: tampilanAgenda },
-  { id: 'sparing', kunci: 'nav.sparing', ikon: 'sparing', warna: '#f2a65a', render: tampilanSparing, lencana: 'sparingPending' },
-  { id: 'pendaftaran', kunci: 'nav.pendaftaran', ikon: 'pendaftaran', warna: '#6a5ae0', render: tampilanPendaftaran, lencana: 'submissionsNew' },
-  { id: 'langit', kunci: 'nav.langit', ikon: 'langit', warna: '#ffe9c4', render: tampilanLangit },
-  { id: 'tim', kunci: 'nav.tim', ikon: 'tim', warna: '#b5aed0', render: tampilanTim },
-  { id: 'taksonomi', kunci: 'nav.taksonomi', ikon: 'taksonomi', warna: '#a99bf2', render: tampilanTaksonomi },
-  { id: 'pengaturan', kunci: 'nav.pengaturan', ikon: 'pengaturan', warna: '#8f8aa3', render: tampilanPengaturan },
-  { id: 'akun', kunci: 'nav.akun', ikon: 'akun', warna: '#9E94F9', render: tampilanAkun, hanyaOwner: true },
-  { id: 'audit', kunci: 'nav.audit', ikon: 'audit', warna: '#6c6782', render: tampilanAudit },
-  { id: 'pemantauan', kunci: 'nav.monitoring', ikon: 'pemantauan', warna: '#5ad1c0', render: tampilanPemantauan, hanyaOwner: true },
-  // Tidak muncul di navigasi: dicapai dari tombol "Lihat semua" di halaman
-  // monitoring. Menu utama sudah sebelas baris, dan halaman ini adalah
-  // pendalaman dari satu panel di sana, bukan tujuan tersendiri.
+  { id: 'menu', kunci: 'nav.menu', ikon: 'menu', warna: '#a99bf2', render: tampilanMenu, grup: 'konten' },
+  { id: 'artikel', kunci: 'nav.artikel', ikon: 'artikel', warna: '#5ad1c0', render: tampilanArtikel, grup: 'konten' },
+  { id: 'program', kunci: 'nav.program', ikon: 'program', warna: '#a99bf2', render: tampilanProgram, grup: 'konten' },
+  { id: 'proyek', kunci: 'nav.proyek', ikon: 'proyek', warna: '#9E94F9', render: tampilanProyek, grup: 'konten' },
+  { id: 'agenda', kunci: 'nav.agenda', ikon: 'agenda', warna: '#f3f2f8', render: tampilanAgenda, grup: 'konten' },
+  { id: 'sparing', kunci: 'nav.sparing', ikon: 'sparing', warna: '#f2a65a', render: tampilanSparing, lencana: 'sparingPending', grup: 'komunitas' },
+  { id: 'pendaftaran', kunci: 'nav.pendaftaran', ikon: 'pendaftaran', warna: '#6a5ae0', render: tampilanPendaftaran, lencana: 'submissionsNew', grup: 'komunitas' },
+  { id: 'langit', kunci: 'nav.langit', ikon: 'langit', warna: '#ffe9c4', render: tampilanLangit, grup: 'komunitas' },
+  { id: 'tim', kunci: 'nav.tim', ikon: 'tim', warna: '#b5aed0', render: tampilanTim, grup: 'komunitas' },
+  { id: 'taksonomi', kunci: 'nav.taksonomi', ikon: 'taksonomi', warna: '#a99bf2', render: tampilanTaksonomi, grup: 'sistem' },
+  { id: 'pengaturan', kunci: 'nav.pengaturan', ikon: 'pengaturan', warna: '#8f8aa3', render: tampilanPengaturan, grup: 'sistem' },
+  { id: 'akun', kunci: 'nav.akun', ikon: 'akun', warna: '#9E94F9', render: tampilanAkun, hanyaOwner: true, grup: 'sistem' },
+  { id: 'audit', kunci: 'nav.audit', ikon: 'audit', warna: '#6c6782', render: tampilanAudit, grup: 'sistem' },
+  { id: 'pemantauan', kunci: 'nav.monitoring', ikon: 'pemantauan', warna: '#5ad1c0', render: tampilanPemantauan, hanyaOwner: true, grup: 'sistem' },
   { id: 'kejadian', kunci: 'nav.securityEvent', ikon: 'kejadian', warna: '#f2686a', render: tampilanKejadian, hanyaOwner: true, tersembunyi: true }
 ];
+
+const GRUP_URUTAN = ['konten', 'komunitas', 'sistem'];
+const GRUP_KUNCI = { konten: 'nav.grup.konten', komunitas: 'nav.grup.komunitas', sistem: 'nav.grup.sistem' };
+const KUNCI_GRUP_STATE = 'si.admin.nav.groups';
 
 const akar = qs('#akar');
 let aku = null;
@@ -131,30 +136,78 @@ function layarUtama() {
   // navigasi — dua daftar berbeda untuk dua kebutuhan berbeda.
   const terlihat = daftar.filter((h) => !h.tersembunyi);
 
-  const gambarNav = (hitungan = {}) => {
-    pasang(kosongkan(navEl),
-      terlihat.map((h) => {
-        const aktif = (location.hash.slice(2) || '') === h.id;
-        const n = hitungan[h.lencana];
-        return el(
-          'a',
-          {
-            href: `#/${h.id}`,
-            class: `nav-item${aktif ? ' aktif' : ''}`,
-            // Warna halaman diteruskan sebagai custom property, bukan gaya
-            // inline per properti — satu nilai menyetel ubin, cincin, dan
-            // pendarnya sekaligus lewat CSS.
-            style: { '--warna': h.warna },
-            'aria-current': aktif ? 'page' : null
-          },
-          el('span', { class: 'nav-ubin' }, ikon(h.ikon)),
-          el('span', { class: 'nav-teks' }, t(h.kunci)),
-          n ? el('span', { class: 'nav-lencana' }, String(n)) : null
-        );
-      })
-    );
+  let grupState = {};
+  try { grupState = JSON.parse(localStorage.getItem(KUNCI_GRUP_STATE) || '{}'); } catch { /* bawaan */ }
 
-    const kini = daftar.find((h) => h.id === (location.hash.slice(2) || '')) ?? daftar[0];
+  const simpanGrupState = () => {
+    try { localStorage.setItem(KUNCI_GRUP_STATE, JSON.stringify(grupState)); } catch { /* kuota penuh */ }
+  };
+
+  const itemNav = (h, hitungan) => {
+    const aktif = (location.hash.slice(2) || '') === h.id;
+    const n = hitungan[h.lencana];
+    return el(
+      'a',
+      {
+        href: `#/${h.id}`,
+        class: `nav-item${aktif ? ' aktif' : ''}`,
+        style: { '--warna': h.warna },
+        'aria-current': aktif ? 'page' : null
+      },
+      el('span', { class: 'nav-ubin' }, ikon(h.ikon)),
+      el('span', { class: 'nav-teks' }, t(h.kunci)),
+      n ? el('span', { class: 'nav-lencana' }, String(n)) : null
+    );
+  };
+
+  const gambarNav = (hitungan = {}) => {
+    const tanpaGrup = terlihat.filter((h) => !h.grup);
+    const grupMap = {};
+    for (const h of terlihat) {
+      if (!h.grup) continue;
+      (grupMap[h.grup] ??= []).push(h);
+    }
+
+    const halAktif = location.hash.slice(2) || '';
+
+    const fragmen = [];
+    for (const h of tanpaGrup) fragmen.push(itemNav(h, hitungan));
+
+    for (const g of GRUP_URUTAN) {
+      const anggota = grupMap[g];
+      if (!anggota?.length) continue;
+
+      const aktifDiGrup = anggota.some((h) => h.id === halAktif);
+      if (aktifDiGrup) grupState[g] = false;
+
+      const tutup = grupState[g] ?? false;
+      const dalam = el('div', { class: 'nav-grup-dalam' },
+        ...anggota.map((h) => itemNav(h, hitungan)));
+      const wadahIsi = el('div', { class: `nav-grup-isi${tutup ? ' nav-grup-tutup' : ''}` }, dalam);
+
+      const kepala = el('button', {
+        type: 'button',
+        class: `nav-grup-kepala${tutup ? ' collapsed' : ''}`,
+        'aria-expanded': String(!tutup),
+        onclick: () => {
+          const baruTutup = !wadahIsi.classList.contains('nav-grup-tutup');
+          wadahIsi.classList.toggle('nav-grup-tutup', baruTutup);
+          kepala.classList.toggle('collapsed', baruTutup);
+          kepala.setAttribute('aria-expanded', String(!baruTutup));
+          grupState[g] = baruTutup;
+          simpanGrupState();
+        }
+      },
+        el('span', { class: 'nav-grup-label' }, t(GRUP_KUNCI[g])),
+        el('span', { class: 'nav-grup-chevron' }, ikon('chevron'))
+      );
+
+      fragmen.push(el('div', { class: 'nav-grup' }, kepala, wadahIsi));
+    }
+
+    pasang(kosongkan(navEl), ...fragmen);
+
+    const kini = daftar.find((h) => h.id === halAktif) ?? daftar[0];
     pasang(kosongkan(jejakEl),
       el('span', { class: 'jejak-akar' }, t('shell.beranda')),
       el('span', { class: 'jejak-pisah' }, '/'),

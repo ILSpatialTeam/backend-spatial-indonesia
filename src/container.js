@@ -25,6 +25,8 @@ import {
 import { PgSettingsRepository, PgMediaRepository } from './infrastructure/repositories/misc.pg.js';
 import { PgSkyRepository } from './infrastructure/repositories/sky.pg.js';
 import { PgTeamRepository } from './infrastructure/repositories/team.pg.js';
+import { PgProgramRepository } from './infrastructure/repositories/program.pg.js';
+import { PgProjectCategoryRepository, PgProjectRepository } from './infrastructure/repositories/project.pg.js';
 import {
   PgSecurityEventRepository, PgHealthRepository
 } from './infrastructure/repositories/observability.pg.js';
@@ -44,6 +46,8 @@ import { MonitoringService } from './application/services/monitoring.service.js'
 import { PresenceHub } from './application/services/presence-hub.service.js';
 import { SkyService } from './application/services/sky.service.js';
 import { TeamService } from './application/services/team.service.js';
+import { ProgramService } from './application/services/program.service.js';
+import { ProjectService } from './application/services/project.service.js';
 
 export const UPLOAD_DIR = fileURLToPath(new URL('../uploads/', import.meta.url));
 
@@ -66,7 +70,10 @@ export function buildContainer({ database = db } = {}) {
     security: new PgSecurityEventRepository(database),
     health: new PgHealthRepository(database),
     sky: new PgSkyRepository(database),
-    team: new PgTeamRepository(database)
+    team: new PgTeamRepository(database),
+    programs: new PgProgramRepository(database),
+    projectCategories: new PgProjectCategoryRepository(database),
+    projects: new PgProjectRepository(database)
   };
 
   const hasher = new BcryptPasswordHasher();
@@ -96,7 +103,9 @@ export function buildContainer({ database = db } = {}) {
     userAdmin: new UserAdminService({ ...repos, hasher }),
     media: new MediaService({ ...repos, uploadDir: UPLOAD_DIR, publicUrl: env.PUBLIC_URL }),
     sky: new SkyService({ ...repos, cache }),
-    team: new TeamService({ ...repos, cache })
+    team: new TeamService({ ...repos, cache }),
+    program: new ProgramService({ ...repos, cache }),
+    project: new ProjectService({ ...repos, cache })
   };
 
   return { cache, repos, hasher, tokens, services, presenceHub, uploadDir: UPLOAD_DIR };

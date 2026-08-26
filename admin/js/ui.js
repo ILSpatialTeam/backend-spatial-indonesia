@@ -84,7 +84,10 @@ const IKON = {
   // supaya tidak tertukar dengan ikon "favorit" yang lazim di tempat lain.
   langit: 'M3 18a9 9 0 0 1 18 0M3 18h18M12 7.5l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9ZM6.5 13.5h.01M17.5 13.5h.01',
   hamburger: 'M4 6h16M4 12h16M4 18h16',
-  tim: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75'
+  tim: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
+  program: 'M4 4h16v16H4ZM4 9h16M9 4v16',
+  proyek: 'M4 5a1 1 0 0 1 1-1h4l2 2h8a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1ZM9 13l2 2 4-4',
+  chevron: 'M9 6l6 6-6 6'
 };
 
 const NS_SVG = 'http://www.w3.org/2000/svg';

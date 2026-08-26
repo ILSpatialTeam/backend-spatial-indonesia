@@ -173,3 +173,29 @@ export class MediaRepository extends Contract {
   findById(_id) { this._abstract('findById'); }
   remove(_id) { this._abstract('remove'); }
 }
+
+export class ProgramRepository extends Contract {
+  listActive() { this._abstract('listActive'); }
+  listAll() { this._abstract('listAll'); }
+  findById(_id) { this._abstract('findById'); }
+  create(_data) { this._abstract('create'); }
+  update(_id, _patch) { this._abstract('update'); }
+  remove(_id) { this._abstract('remove'); }
+  reorder(_urutan) { this._abstract('reorder'); }
+}
+
+export class ProjectCategoryRepository extends Contract {
+  listAll() { this._abstract('listAll'); }
+  upsert(_data) { this._abstract('upsert'); }
+  remove(_id) { this._abstract('remove'); }
+}
+
+export class ProjectRepository extends Contract {
+  listActive() { this._abstract('listActive'); }
+  listAll(_opsi) { this._abstract('listAll'); }
+  findById(_id) { this._abstract('findById'); }
+  create(_data) { this._abstract('create'); }
+  update(_id, _patch) { this._abstract('update'); }
+  remove(_id) { this._abstract('remove'); }
+  reorder(_urutan) { this._abstract('reorder'); }
+}

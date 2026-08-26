@@ -113,6 +113,25 @@ export function adminRoutes(c, { requireAuth, uploadDir }) {
   r.delete('/team/:id', validate({ params: S.uuidParam }), ah(c.teamDelete));
   r.post('/team/reorder', validate({ body: S.teamReorderBody }), ah(c.teamReorder));
 
+  // ── program ───────────────────────────────────────────────────────────────
+  r.get('/programs', ah(c.programList));
+  r.get('/programs/:id', validate({ params: S.uuidParam }), ah(c.programGet));
+  r.post('/programs', validate({ body: S.programCreateBody }), ah(c.programCreate));
+  r.patch('/programs/:id', validate({ params: S.uuidParam, body: S.programUpdateBody }), ah(c.programUpdate));
+  r.delete('/programs/:id', validate({ params: S.uuidParam }), ah(c.programDelete));
+  r.post('/programs/reorder', validate({ body: S.programReorderBody }), ah(c.programReorder));
+
+  // ── proyek karya ─────────────────────────────────────────────────────────
+  r.get('/projects', ah(c.projectList));
+  r.get('/projects/:id', validate({ params: S.uuidParam }), ah(c.projectGet));
+  r.post('/projects', validate({ body: S.projectCreateBody }), ah(c.projectCreate));
+  r.patch('/projects/:id', validate({ params: S.uuidParam, body: S.projectUpdateBody }), ah(c.projectUpdate));
+  r.delete('/projects/:id', validate({ params: S.uuidParam }), ah(c.projectDelete));
+  r.post('/projects/reorder', validate({ body: S.projectReorderBody }), ah(c.projectReorder));
+  r.get('/project-categories', ah(c.projectCategoryList));
+  r.put('/project-categories', validate({ body: S.projectCategoryBody }), ah(c.projectCategoryUpsert));
+  r.delete('/project-categories/:id', validate({ params: S.idParam }), ah(c.projectCategoryDelete));
+
   // ── jejak audit ───────────────────────────────────────────────────────────
   r.get('/audit', validate({ query: S.auditQuery }), ah(c.auditList));
 

@@ -204,6 +204,8 @@ function bukaMenu(m, setelahSimpan) {
   );
   planetBidang.hidden = m.kind !== 'planet';
 
+  const tampilIsiPanel = m.id === 'inti' || m.id === 'gabung';
+
   pasang(form,
     el('div', { class: 'baris-3' },
       bidang(t('menu.form.label'), input({ name: 'label', value: m.label, required: true }), { nama: 'label' }),
@@ -217,18 +219,18 @@ function bukaMenu(m, setelahSimpan) {
       ), { nama: 'isActive' })),
     bidang(t('menu.form.judulPanel'), input({ name: 'title', value: m.title, required: true }), { nama: 'title' }),
     bidang(t('menu.form.leadPanel'), textarea({ name: 'lead', value: m.lead, rows: 2 }), { nama: 'lead' }),
-    el('fieldset', { class: 'kotak' },
-      el('legend', {}, t('menu.form.item')),
-      m.id === 'event' || m.id === 'insight'
-        ? el('p', { class: 'redup kecil' },
-            t('menu.form.itemOtomatis', { sumber: t(m.id === 'event' ? 'nav.agenda' : 'nav.artikel').toLowerCase() }))
-        : null,
-      daftarButir,
-      el('button', { type: 'button', class: 'btn btn-kecil', onclick: () => tambahButir() }, t('menu.form.tambahItem'))),
-    el('fieldset', { class: 'kotak' },
-      el('legend', {}, t('menu.form.tautan')),
-      daftarTautan,
-      el('button', { type: 'button', class: 'btn btn-kecil', onclick: () => tambahTautan() }, t('menu.form.tambahTautan'))),
+    tampilIsiPanel
+      ? el('fieldset', { class: 'kotak' },
+          el('legend', {}, t('menu.form.item')),
+          daftarButir,
+          el('button', { type: 'button', class: 'btn btn-kecil', onclick: () => tambahButir() }, t('menu.form.tambahItem')))
+      : null,
+    tampilIsiPanel
+      ? el('fieldset', { class: 'kotak' },
+          el('legend', {}, t('menu.form.tautan')),
+          daftarTautan,
+          el('button', { type: 'button', class: 'btn btn-kecil', onclick: () => tambahTautan() }, t('menu.form.tambahTautan')))
+      : null,
     planetBidang,
     el('div', { class: 'form-aksi' },
       el('button', { type: 'button', class: 'btn', onclick: tutup }, t('aksi.batal')),
@@ -246,10 +248,12 @@ function bukaMenu(m, setelahSimpan) {
     const muatan = {
       label: d.get('label'), no: d.get('no'), tag: d.get('tag'),
       accent: d.get('accent'), title: d.get('title'), lead: d.get('lead') ?? '',
-      isActive: d.get('isActive') === 'true',
-      items: kumpulkan(daftarButir, ['k', 't', 'd']).map((b) => ({ ...b, t: b.t || null })),
-      links: kumpulkan(daftarTautan, ['label', 'url']).filter((l) => l.label && l.url)
+      isActive: d.get('isActive') === 'true'
     };
+    if (tampilIsiPanel) {
+      muatan.items = kumpulkan(daftarButir, ['k', 't', 'd']).map((b) => ({ ...b, t: b.t || null }));
+      muatan.links = kumpulkan(daftarTautan, ['label', 'url']).filter((l) => l.label && l.url);
+    }
 
     if (m.kind === 'planet') {
       Object.assign(muatan, {
