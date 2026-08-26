@@ -34,6 +34,8 @@ export function publicRoutes(c) {
   r.get('/sky/mine', noStore, ah(c.myStar));
   r.post('/sky/stars', noStore, limitKiriman, validate({ body: S.starBody }), ah(c.placeStar));
 
+  r.get('/team', publicCache(120), ah(c.teamMembers));
+
   r.get('/presence', noStore, ah(c.presence));
 
   // Aliran presence live. TIDAK memakai limitBaca: koneksinya memang dibuka

@@ -1,7 +1,7 @@
 // Controller dashboard. Sama tipisnya dengan yang publik; semua keputusan ada
 // di service. Yang khas di sini cuma satu: `req.actor` selalu diteruskan,
 // karena setiap perubahan harus tercatat siapa yang melakukannya.
-export function makeAdminController({ menuAdmin, articleAdmin, curation, userAdmin, media, monitoring, sky, cache }) {
+export function makeAdminController({ menuAdmin, articleAdmin, curation, userAdmin, media, monitoring, sky, team, cache }) {
   return {
     // ── ringkasan ─────────────────────────────────────────────────────────
     async dashboard(req, res) {
@@ -171,6 +171,28 @@ export function makeAdminController({ menuAdmin, articleAdmin, curation, userAdm
     async mediaDelete(req, res) {
       await media.remove(req.params.id, req.actor);
       res.status(204).end();
+    },
+
+    // ── tim ──────────────────────────────────────────────────────────────
+    async teamList(req, res) {
+      res.json(await team.listAll());
+    },
+    async teamGet(req, res) {
+      res.json(await team.get(req.params.id));
+    },
+    async teamCreate(req, res) {
+      res.status(201).json(await team.create(req.body, req.actor));
+    },
+    async teamUpdate(req, res) {
+      res.json(await team.update(req.params.id, req.body, req.actor));
+    },
+    async teamDelete(req, res) {
+      await team.remove(req.params.id, req.actor);
+      res.status(204).end();
+    },
+    async teamReorder(req, res) {
+      await team.reorder(req.body.order, req.actor);
+      res.json({ ok: true });
     },
 
     // ── perkakas ──────────────────────────────────────────────────────────

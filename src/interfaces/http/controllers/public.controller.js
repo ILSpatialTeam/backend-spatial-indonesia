@@ -4,7 +4,7 @@ import { env } from '../../../config/env.js';
 // Controller sengaja tipis: menerjemahkan HTTP jadi panggilan service dan
 // sebaliknya, tidak lebih. Tidak ada satu pun aturan bisnis di berkas ini —
 // itu yang membuat aturan yang sama berlaku sama persis lewat rute mana pun.
-export function makePublicController({ content, participation, presenceHub, sky }) {
+export function makePublicController({ content, participation, presenceHub, sky, team }) {
   const ipHash = (req) => hashIp(req.ip, env.ipHashSalt);
 
   return {
@@ -136,6 +136,10 @@ export function makePublicController({ content, participation, presenceHub, sky 
 
     async settings(req, res) {
       res.sendCached(await content.publicSettings());
+    },
+
+    async teamMembers(req, res) {
+      res.sendCached(await team.listActive());
     }
   };
 }

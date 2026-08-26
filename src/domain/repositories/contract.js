@@ -157,6 +157,16 @@ export class HealthRepository extends Contract {
   indeksTerpakai() { this._abstract('indeksTerpakai'); }
 }
 
+export class TeamRepository extends Contract {
+  listActive() { this._abstract('listActive'); }
+  listAll() { this._abstract('listAll'); }
+  findById(_id) { this._abstract('findById'); }
+  create(_data) { this._abstract('create'); }
+  update(_id, _patch) { this._abstract('update'); }
+  remove(_id) { this._abstract('remove'); }
+  reorder(_urutan) { this._abstract('reorder'); }
+}
+
 export class MediaRepository extends Contract {
   list(_opsi) { this._abstract('list'); }
   create(_data) { this._abstract('create'); }

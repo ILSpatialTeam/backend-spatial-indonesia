@@ -8,6 +8,7 @@ import { tampilanAgenda } from './views/agenda.js';
 import { tampilanSparing, tampilanPendaftaran, tampilanLangit } from './views/moderasi.js';
 import { tampilanTaksonomi, tampilanPengaturan, tampilanAkun, tampilanAudit } from './views/pengaturan.js';
 import { tampilanPemantauan, tampilanKejadian } from './views/pemantauan.js';
+import { tampilanTim } from './views/tim.js';
 
 // Kerangka dashboard: login, navigasi, dan perutean berbasis hash.
 //
@@ -31,6 +32,7 @@ const HALAMAN = [
   { id: 'sparing', kunci: 'nav.sparing', ikon: 'sparing', warna: '#f2a65a', render: tampilanSparing, lencana: 'sparingPending' },
   { id: 'pendaftaran', kunci: 'nav.pendaftaran', ikon: 'pendaftaran', warna: '#6a5ae0', render: tampilanPendaftaran, lencana: 'submissionsNew' },
   { id: 'langit', kunci: 'nav.langit', ikon: 'langit', warna: '#ffe9c4', render: tampilanLangit },
+  { id: 'tim', kunci: 'nav.tim', ikon: 'tim', warna: '#b5aed0', render: tampilanTim },
   { id: 'taksonomi', kunci: 'nav.taksonomi', ikon: 'taksonomi', warna: '#a99bf2', render: tampilanTaksonomi },
   { id: 'pengaturan', kunci: 'nav.pengaturan', ikon: 'pengaturan', warna: '#8f8aa3', render: tampilanPengaturan },
   { id: 'akun', kunci: 'nav.akun', ikon: 'akun', warna: '#9E94F9', render: tampilanAkun, hanyaOwner: true },

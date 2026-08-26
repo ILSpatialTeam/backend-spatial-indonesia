@@ -86,5 +86,6 @@ export const TAG = Object.freeze({
   presence: 'presence',
   taxonomy: 'taxonomy',
   settings: 'settings',
-  sky: 'sky'
+  sky: 'sky',
+  team: 'team'
 });

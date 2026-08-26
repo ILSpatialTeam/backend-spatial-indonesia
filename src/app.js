@@ -183,15 +183,7 @@ export function createApp({ container = buildContainer() } = {}) {
   // ── API ───────────────────────────────────────────────────────────────────
   app.use('/api/v1', buildRouter(container));
 
-  app.get('/', (_req, res) =>
-    res.json({
-      name: 'Spatial Indonesia API',
-      docs: '/docs',
-      openapi: '/api/v1/openapi.json',
-      admin: '/admin',
-      health: '/api/v1/health'
-    })
-  );
+  app.get('/', (_req, res) => res.redirect('/admin'));
 
   app.use(notFoundHandler);
   app.use(errorHandler);

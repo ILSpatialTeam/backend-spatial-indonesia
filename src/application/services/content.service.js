@@ -11,7 +11,7 @@ import { TAG } from '../../infrastructure/cache/memory-cache.js';
 // dari infrastructure/ — itu yang membuat service ini bisa diuji dengan
 // repositori palsu dan tidak tahu-menahu soal Postgres.
 export class ContentService {
-  constructor({ menus, articles, taxonomy, sparings, agenda, presence, settings, cache }) {
+  constructor({ menus, articles, taxonomy, sparings, agenda, presence, settings, team, cache }) {
     this.menus = menus;
     this.articles = articles;
     this.taxonomy = taxonomy;
@@ -19,6 +19,7 @@ export class ContentService {
     this.agenda = agenda;
     this.presence = presence;
     this.settings = settings;
+    this.team = team;
     this.cache = cache;
   }
 
@@ -49,18 +50,19 @@ export class ContentService {
   async bootstrap() {
     return this.cache.wrap(
       'bootstrap',
-      { tags: [TAG.menu, TAG.article, TAG.taxonomy, TAG.agenda, TAG.sparing, TAG.settings], ttlMs: 120_000 },
+      { tags: [TAG.menu, TAG.article, TAG.taxonomy, TAG.agenda, TAG.sparing, TAG.settings, TAG.team], ttlMs: 120_000 },
       async () => {
         const freshDays = await this._freshDays();
         // Dijalankan berbarengan: tidak ada yang bergantung pada hasil yang
         // lain, jadi menjalankannya berurutan hanya menjumlahkan latensinya.
-        const [menus, kategori, frekuensi, artikel, acara, sparing] = await Promise.all([
+        const [menus, kategori, frekuensi, artikel, acara, sparing, tim] = await Promise.all([
           this.menus.listActive(),
           this.taxonomy.listCategories(),
           this.taxonomy.listFrequencies(),
           this.articles.listPublished({ limit: 100 }),
           this.agenda.listPublished(),
-          this.sparings.listApprovedGrouped()
+          this.sparings.listApprovedGrouped(),
+          this.team.listActive()
         ]);
 
         const planets = menus.filter((m) => m.kind === 'planet').map(toPlanetShape);
@@ -80,6 +82,10 @@ export class ContentService {
           articles: artikel.map((row) => toArticle(row, { freshDays })),
           sparing,
           agenda: acara.map(toAgendaEvent),
+          team: tim.map((m) => ({
+            id: m.id, name: m.name, role: m.role,
+            photoUrl: m.photo_url, sortOrder: m.sort_order
+          })),
           generatedAt: new Date().toISOString()
         };
       }

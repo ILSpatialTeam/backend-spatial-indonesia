@@ -105,6 +105,14 @@ export function adminRoutes(c, { requireAuth, uploadDir }) {
   r.patch('/sky/:id', validate({ params: S.uuidParam, body: S.moderationBody }), ah(c.skyModerate));
   r.delete('/sky/:id', validate({ params: S.uuidParam }), ah(c.skyDelete));
 
+  // ── tim ───────────────────────────────────────────────────────────────────
+  r.get('/team', ah(c.teamList));
+  r.get('/team/:id', validate({ params: S.uuidParam }), ah(c.teamGet));
+  r.post('/team', validate({ body: S.teamCreateBody }), ah(c.teamCreate));
+  r.patch('/team/:id', validate({ params: S.uuidParam, body: S.teamUpdateBody }), ah(c.teamUpdate));
+  r.delete('/team/:id', validate({ params: S.uuidParam }), ah(c.teamDelete));
+  r.post('/team/reorder', validate({ body: S.teamReorderBody }), ah(c.teamReorder));
+
   // ── jejak audit ───────────────────────────────────────────────────────────
   r.get('/audit', validate({ query: S.auditQuery }), ah(c.auditList));
 

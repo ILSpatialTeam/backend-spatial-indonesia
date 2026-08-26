@@ -195,6 +195,19 @@ export const agendaCreateBody = z.object({
 
 export const agendaUpdateBody = agendaCreateBody.partial().omit({ id: true });
 
+// ── tim (admin) ────────────────────────────────────────────────────────────
+export const teamCreateBody = z.object({
+  name: z.string().trim().min(2, 'Nama minimal 2 huruf.').max(80),
+  role: z.string().trim().min(2, 'Peran minimal 2 huruf.').max(120),
+  photoUrl: z.string().url().max(500).nullish(),
+  sortOrder: z.coerce.number().int().min(0).max(100).default(0),
+  isActive: z.boolean().default(true)
+});
+
+export const teamUpdateBody = teamCreateBody.partial();
+
+export const teamReorderBody = z.object({ order: z.array(uuid).min(1).max(50) });
+
 // ── moderasi & lainnya ──────────────────────────────────────────────────────
 export const moderationQuery = pagination.extend({
   status: z.enum(['pending', 'approved', 'rejected']).optional()
