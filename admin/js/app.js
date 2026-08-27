@@ -241,6 +241,11 @@ function layarUtama() {
     if (e.target.closest('.nav-item')) tutupSisi();
   });
 
+  const tautSitus = el('a', {
+    class: 'ikon-btn', href: '#',
+    target: '_blank', rel: 'noopener', title: t('shell.bukaSitus'), 'aria-label': t('shell.bukaSitus')
+  }, ikon('situs'));
+
   const topbar = el(
     'header',
     { class: 'topbar' },
@@ -257,10 +262,7 @@ function layarUtama() {
       // Ganti bahasa menggambar ulang seluruh shell: label navigasi, breadcrumb,
       // dan halaman yang sedang terbuka semuanya dibangun ulang dari kamus.
       pemilihBahasa(() => layarUtama()),
-      el('a', {
-        class: 'ikon-btn', href: 'http://localhost:8899/index.html',
-        target: '_blank', rel: 'noopener', title: t('shell.bukaSitus'), 'aria-label': t('shell.bukaSitus')
-      }, ikon('situs')),
+      tautSitus,
       el('a', {
         class: 'ikon-btn', href: '/docs', target: '_blank', rel: 'noopener',
         title: t('shell.docsApi'), 'aria-label': t('shell.docsApi')
@@ -312,7 +314,11 @@ function layarUtama() {
   // Angka di samping menu ambil dari ringkasan yang sama dengan beranda —
   // satu permintaan, bukan satu per menu.
   const hitungLencana = async () => {
-    try { return await api.get('/admin/dashboard'); } catch { return {}; }
+    try {
+      const data = await api.get('/admin/dashboard');
+      if (data.siteUrl) tautSitus.href = data.siteUrl;
+      return data;
+    } catch { return {}; }
   };
 
   window.addEventListener('hashchange', gambar);

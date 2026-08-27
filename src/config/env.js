@@ -16,6 +16,7 @@ const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(4000),
   PUBLIC_URL: z.string().url().default('http://localhost:4000'),
+  SITE_URL: z.string().url().default('http://localhost:8899/index.html'),
 
   DATABASE_URL: z.string().min(1, 'DATABASE_URL wajib diisi'),
   PGSSL: bool('false'),

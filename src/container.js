@@ -108,5 +108,5 @@ export function buildContainer({ database = db } = {}) {
     project: new ProjectService({ ...repos, cache })
   };
 
-  return { cache, repos, hasher, tokens, services, presenceHub, uploadDir: UPLOAD_DIR };
+  return { cache, repos, hasher, tokens, services, presenceHub, uploadDir: UPLOAD_DIR, env };
 }

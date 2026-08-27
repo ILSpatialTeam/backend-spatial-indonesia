@@ -1,11 +1,11 @@
 // Controller dashboard. Sama tipisnya dengan yang publik; semua keputusan ada
 // di service. Yang khas di sini cuma satu: `req.actor` selalu diteruskan,
 // karena setiap perubahan harus tercatat siapa yang melakukannya.
-export function makeAdminController({ menuAdmin, articleAdmin, curation, userAdmin, media, monitoring, sky, team, program, project, cache }) {
+export function makeAdminController({ menuAdmin, articleAdmin, curation, userAdmin, media, monitoring, sky, team, program, project, cache, env }) {
   return {
     // ── ringkasan ─────────────────────────────────────────────────────────
     async dashboard(req, res) {
-      res.json({ ...(await curation.dashboard()), cacheEntries: cache.size });
+      res.json({ ...(await curation.dashboard()), cacheEntries: cache.size, siteUrl: env.SITE_URL });
     },
 
     // ── menu ──────────────────────────────────────────────────────────────
