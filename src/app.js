@@ -161,6 +161,38 @@ export function createApp({ container = buildContainer() } = {}) {
       setHeaders: (res) => res.set('X-Content-Type-Options', 'nosniff')
     })
   );
+  // Tidak ada satu pun bagian dari host ini yang pantas masuk mesin pencari.
+  //
+  // Ini API dan ruang kendali, bukan situsnya — yang diindeks seharusnya
+  // www.spatialindonesia.org. Tanpa penjagaan ini, yang tersedia untuk dirayapi
+  // adalah halaman masuk dashboard dan dokumentasi lengkap setiap endpoint
+  // beserta bentuk muatannya: bahan pengintaian yang rapi, dan hasil pencarian
+  // "spatial indonesia" yang mengarahkan orang ke layar login.
+  //
+  // Dua lapis, karena keduanya menjawab perayap yang berbeda:
+  //   robots.txt      dibaca sebelum merayapi — mencegah kunjungannya
+  //   X-Robots-Tag    dibaca pada responsnya — mencegah pengindeksan halaman
+  //                   yang terlanjur ditemukan lewat tautan dari tempat lain
+  //
+  // Hanya robots.txt tidak cukup: halaman yang dilarang dirayapi masih bisa
+  // muncul di hasil pencarian tanpa deskripsi kalau ada yang menautkannya.
+  // `/uploads` dikecualikan dari keduanya, dan itu disengaja: gambar di sana
+  // ditampilkan oleh situs utama (foto tim, gambar karya anggota), jadi
+  // memblokirnya berarti gambar-gambar itu tidak bisa muncul di Google Images —
+  // sekaligus memenuhi Search Console dengan peringatan "gambar diblokir
+  // robots.txt" untuk halaman yang justru ingin diindeks.
+  //
+  // Itu juga sebabnya middleware di bawah dipasang SETELAH `/uploads` di-mount
+  // beberapa baris di atas: pemasangan berurutan, dan header ini tidak boleh
+  // ikut menempel di sana.
+  app.get('/robots.txt', (_req, res) => {
+    res.type('text/plain').send('User-agent: *\nDisallow: /\nAllow: /uploads/\n');
+  });
+  app.use((_req, res, next) => {
+    res.set('X-Robots-Tag', 'noindex, nofollow');
+    next();
+  });
+
   app.use('/admin/vendor/quill', express.static(QUILL_DIR, { maxAge: '7d', index: false }));
   app.use('/admin', express.static(ADMIN_DIR, { index: 'index.html', maxAge: 0 }));
 
