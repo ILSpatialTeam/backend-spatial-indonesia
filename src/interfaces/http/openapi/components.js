@@ -164,6 +164,21 @@ export const components = {
         warna: { type: 'string', example: '#5ad1c0' }
       }
     },
+    // Keadaan pendaftaran dihitung server, tidak dikirim mentah sebagai kolom.
+    // Klien tidak perlu tahu aturan "kuota habis" atau "sudah lewat" — kalau ia
+    // menghitungnya sendiri, suatu hari jawabannya beda dengan server dan
+    // tombol daftarnya menyala untuk kiriman yang pasti ditolak.
+    RegistrationState: {
+      type: 'object',
+      properties: {
+        mode: { type: 'string', enum: ['none', 'internal', 'external'], example: 'internal' },
+        capacity: { type: 'integer', nullable: true, description: 'null = tanpa batas', example: 40 },
+        seatsTaken: { type: 'integer', example: 12 },
+        seatsLeft: { type: 'integer', nullable: true, description: 'null kalau tanpa batas', example: 28 },
+        open: { type: 'boolean', description: 'Boleh menerima pendaftaran sekarang' },
+        reason: { type: 'string', enum: ['open', 'none', 'past', 'closed', 'full'], example: 'open' }
+      }
+    },
     AgendaEvent: {
       type: 'object',
       properties: {
@@ -171,9 +186,49 @@ export const components = {
         kind: { type: 'string', example: 'MEETUP' },
         title: { type: 'string' },
         date: { type: 'string', format: 'date' },
+        startsAt: { type: 'string', nullable: true, example: '19:00' },
+        endsAt: { type: 'string', nullable: true, example: '21:30' },
         place: { type: 'string' },
         note: { type: 'string' },
-        url: { type: 'string', nullable: true }
+        url: { type: 'string', nullable: true },
+        hasDetail: { type: 'boolean', description: 'Punya uraian panjang atau pendaftaran — kartu Event memakainya untuk memutuskan barisnya bisa dibuka atau tidak' },
+        registration: { $ref: '#/components/schemas/RegistrationState' }
+      }
+    },
+    AgendaEventDetail: {
+      allOf: [
+        { $ref: '#/components/schemas/AgendaEvent' },
+        {
+          type: 'object',
+          properties: {
+            address: { type: 'string' },
+            descriptionHtml: { type: 'string', description: 'HTML yang sudah disanitasi server' },
+            registerUrl: { type: 'string', nullable: true, description: 'Hanya untuk mode external' },
+            registrationClosesAt: { type: 'string', format: 'date', nullable: true }
+          }
+        }
+      ]
+    },
+    EventRegisterBody: {
+      type: 'object',
+      required: ['name', 'email'],
+      properties: {
+        name: { type: 'string', minLength: 2, maxLength: 80 },
+        email: { type: 'string', format: 'email', maxLength: 160 },
+        phone: { type: 'string', maxLength: 32 },
+        note: { type: 'string', maxLength: 500 }
+      }
+    },
+    EventRegistration: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', format: 'uuid' },
+        name: { type: 'string' },
+        email: { type: 'string' },
+        phone: { type: 'string' },
+        note: { type: 'string' },
+        status: { type: 'string', enum: ['confirmed', 'cancelled'] },
+        at: { type: 'string', format: 'date-time' }
       }
     },
     AgendaState: {
@@ -265,6 +320,14 @@ export const components = {
     },
     TerlaluSering: {
       description: 'Melewati batas jumlah permintaan.',
+      content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } }
+    },
+    // Bukan kesalahan pengisian, melainkan bentrokan keadaan: kuota yang sudah
+    // habis, atau data yang sudah ada. Jenisnya dibedakan lewat
+    // `error.details.reason` supaya klien bisa memilih kalimat yang tepat tanpa
+    // mencocokkan teks pesan.
+    Konflik: {
+      description: 'Bentrok dengan keadaan yang sudah ada (mis. kuota penuh, email sudah terdaftar).',
       content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } }
     }
   }

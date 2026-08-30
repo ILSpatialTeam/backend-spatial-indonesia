@@ -540,6 +540,155 @@ CREATE INDEX sky_stars_tampil_idx ON sky_stars (created_at DESC)
 CREATE UNIQUE INDEX sky_stars_satu_per_sumber_uq ON sky_stars (ip_hash)
   WHERE ip_hash IS NOT NULL;
 
+-- ══ 0008_team.sql ═══════════════════════════════════════════════
+
+CREATE TABLE team_members (
+  id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name       text NOT NULL,
+  role       text NOT NULL,
+  photo_url  text,
+  sort_order integer NOT NULL DEFAULT 0,
+  is_active  boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT team_members_name_not_blank CHECK (length(btrim(name)) > 0),
+  CONSTRAINT team_members_role_not_blank CHECK (length(btrim(role)) > 0)
+);
+
+CREATE TRIGGER team_members_touch BEFORE UPDATE ON team_members
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+CREATE INDEX team_members_active_idx ON team_members (sort_order) WHERE is_active;
+
+-- ══ 0009_programs_projects.sql ══════════════════════════════════
+
+-- Program dan kegiatan komunitas: tiap baris menjadi satu butir di panel
+-- planet Program. Sebelumnya isinya dikodekan keras di frontend.
+CREATE TABLE programs (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  title        text NOT NULL,
+  subtitle     text NOT NULL DEFAULT '',
+  description  text NOT NULL DEFAULT '',
+  sort_order   integer NOT NULL DEFAULT 0,
+  is_active    boolean NOT NULL DEFAULT true,
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  updated_at   timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT programs_title_len CHECK (length(btrim(title)) BETWEEN 2 AND 120),
+  CONSTRAINT programs_desc_len CHECK (length(description) <= 600)
+);
+
+CREATE TRIGGER programs_touch BEFORE UPDATE ON programs
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- Kategori proyek anggota: dinamis, dikelola lewat dashboard.
+CREATE TABLE project_categories (
+  id           text PRIMARY KEY,
+  label        text NOT NULL,
+  sort_order   integer NOT NULL DEFAULT 0,
+  CONSTRAINT project_categories_id_fmt CHECK (id ~ '^[a-z0-9][a-z0-9-]{0,39}$'),
+  CONSTRAINT project_categories_label_len CHECK (length(btrim(label)) BETWEEN 1 AND 60)
+);
+
+-- Karya anggota komunitas: proyek VR/AR/XR yang dipajang di planet Karya.
+CREATE TABLE projects (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  title        text NOT NULL,
+  description  text NOT NULL DEFAULT '',
+  member_name  text NOT NULL,
+  image_url    text,
+  category_id  text REFERENCES project_categories(id) ON DELETE SET NULL,
+  type         text NOT NULL DEFAULT '',
+  sort_order   integer NOT NULL DEFAULT 0,
+  is_active    boolean NOT NULL DEFAULT true,
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  updated_at   timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT projects_title_len CHECK (length(btrim(title)) BETWEEN 2 AND 200),
+  CONSTRAINT projects_desc_len CHECK (length(description) <= 2000),
+  CONSTRAINT projects_member_len CHECK (length(btrim(member_name)) BETWEEN 2 AND 80)
+);
+
+CREATE INDEX projects_category_idx ON projects (category_id);
+CREATE INDEX projects_active_idx ON projects (is_active, sort_order);
+
+CREATE TRIGGER projects_touch BEFORE UPDATE ON projects
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- ══ 0010_event_registration.sql ═════════════════════════════════
+
+ALTER TABLE agenda_events
+  -- Uraian panjang dari editor WYSIWYG dashboard, sudah disanitasi server
+  -- sebelum disimpan — sama seperti `articles.body_html`. Yang disimpan HTML
+  -- bersih, bukan HTML mentah: satu jalur render yang lupa membersihkan sudah
+  -- cukup untuk membocorkan skrip, dan jalur render itu ada di tiga tempat.
+  ADD COLUMN description_html text NOT NULL DEFAULT '',
+  -- Jam mulai dan selesai terpisah dari `event_date` yang tetap `date`.
+  -- Alasannya: sudut planet Event dihitung dari tanggal, dan hanya dari
+  -- tanggal. Menjadikan kolomnya timestamptz akan menggeser acara ke hari
+  -- lain bagi pengunjung di zona waktu lain — persis yang dihindari
+  -- `stempel()` di domain/entities/agenda.js.
+  ADD COLUMN starts_at time,
+  ADD COLUMN ends_at   time,
+  -- `place` adalah kota (dipakai di baris ringkas kartu Event); `address`
+  -- adalah alamat lengkap yang baru berguna di halaman detail.
+  ADD COLUMN address text NOT NULL DEFAULT '',
+  ADD COLUMN registration text NOT NULL DEFAULT 'none',
+  ADD COLUMN register_url text,
+  -- NULL = tanpa batas. Bukan 0, dan bukan angka besar yang berarti "tak
+  -- terbatas": keduanya menuntut setiap pembaca mengingat konvensinya, dan
+  -- 0 justru bentuk yang sah untuk "kuota habis dibekukan".
+  ADD COLUMN capacity integer,
+  -- Pendaftaran boleh ditutup lebih awal dari hari-H. Kosong = terbuka sampai
+  -- acaranya lewat.
+  ADD COLUMN registration_closes_at date,
+  ADD CONSTRAINT agenda_events_registration_nilai
+    CHECK (registration IN ('none', 'internal', 'external')),
+  ADD CONSTRAINT agenda_events_capacity_wajar
+    CHECK (capacity IS NULL OR capacity BETWEEN 0 AND 100000),
+  -- Acara "external" tanpa tautan adalah tombol daftar yang tidak menuju ke
+  -- mana pun. Lebih baik gagal saat disimpan admin daripada saat diklik
+  -- pengunjung.
+  ADD CONSTRAINT agenda_events_external_butuh_tautan
+    CHECK (registration <> 'external' OR (register_url IS NOT NULL AND btrim(register_url) <> '')),
+  ADD CONSTRAINT agenda_events_jam_urut
+    CHECK (ends_at IS NULL OR starts_at IS NULL OR ends_at > starts_at);
+
+-- Pendaftar satu acara.
+--
+-- Hanya dipakai saat `registration = 'internal'`. Untuk 'external' tabel ini
+-- tetap kosong dan itu benar: pendaftarannya memang tidak lewat kita, dan
+-- menyimpan setengah salinan dari Google Form berarti dua daftar yang pasti
+-- berbeda dalam seminggu.
+CREATE TABLE event_registrations (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_id    text NOT NULL REFERENCES agenda_events(id) ON DELETE CASCADE,
+  name        text NOT NULL,
+  email       text NOT NULL,
+  phone       text NOT NULL DEFAULT '',
+  note        text NOT NULL DEFAULT '',
+  -- 'cancelled' tidak menghapus barisnya: kursinya kembali ke kuota, tapi
+  -- jejak bahwa orang itu pernah mendaftar tetap ada untuk panitia.
+  status      text NOT NULL DEFAULT 'confirmed',
+  ip_hash     text,
+  user_agent  text,
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT event_registrations_status_nilai CHECK (status IN ('confirmed', 'cancelled')),
+  CONSTRAINT event_registrations_name_len CHECK (length(btrim(name)) BETWEEN 2 AND 80),
+  CONSTRAINT event_registrations_email_fmt CHECK (email ~ '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$'),
+  CONSTRAINT event_registrations_phone_len CHECK (length(phone) <= 32),
+  CONSTRAINT event_registrations_note_len CHECK (length(note) <= 500)
+);
+
+-- Satu email satu kursi per acara — tapi hanya untuk yang masih berlaku, jadi
+-- orang yang membatalkan bisa mendaftar lagi tanpa harus menghapus barisnya.
+CREATE UNIQUE INDEX event_registrations_unik
+  ON event_registrations (event_id, lower(email))
+  WHERE status = 'confirmed';
+
+-- Dua kueri yang benar-benar dipakai: menghitung kursi terpakai satu acara,
+-- dan menampilkan daftarnya di dashboard dengan yang terbaru di atas.
+CREATE INDEX event_registrations_acara_idx
+  ON event_registrations (event_id, created_at DESC);
+
 -- ══ catatan migrasi ═══════════════════════════════════════════════════════
 
 CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -557,7 +706,10 @@ INSERT INTO schema_migrations (version, name, checksum) VALUES
   ('0004', 'engagement', 'c3c55e407177b9c9'),
   ('0005', 'observability', 'aa2fbeeb4b07ced8'),
   ('0006', 'hardening', 'b54960b43acbca65'),
-  ('0007', 'sky', '89bfc7c280d8598f')
+  ('0007', 'sky', '89bfc7c280d8598f'),
+  ('0008', 'team', '9e118e95e0baaa0d'),
+  ('0009', 'programs_projects', '65f6efd4571e225f'),
+  ('0010', 'event_registration', 'ec439a3cd6b25768')
 ON CONFLICT (version) DO NOTHING;
 
 COMMIT;

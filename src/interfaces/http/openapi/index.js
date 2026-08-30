@@ -177,6 +177,50 @@ daftar sudah menyimpulkan keduanya, jadi frontend tidak perlu tahu aturannya.
     '/agenda': {
       get: { tags: ['Publik'], summary: 'Agenda terbit', responses: ok('Daftar agenda', arrayOf('AgendaEvent')) }
     },
+    // Rutenya terdaftar SETELAH '/agenda/state' di router — Express mencocokkan
+    // berurutan, dan ':id' yang lebih dulu akan menelan 'state' sebagai id acara.
+    '/agenda/{id}': {
+      get: {
+        tags: ['Publik'],
+        summary: 'Detail satu acara',
+        description:
+          'Tidak di-cache: isinya memuat sisa kursi, dan angka itu jadi dasar keputusan ' +
+          'pengunjung beberapa detik kemudian.',
+        parameters: [pId('id', 'meetup-12')],
+        responses: { ...ok('Detail acara', ref('AgendaEventDetail')), 404: err('TidakAda') }
+      }
+    },
+    '/agenda/{id}/register': {
+      post: {
+        tags: ['Publik'],
+        summary: 'Mendaftar ke satu acara',
+        description:
+          'Hanya untuk acara ber-`registration.mode = internal`. Kuota dijaga di dalam ' +
+          'transaksi dengan baris acara dikunci, jadi dua pendaftaran bersamaan tidak ' +
+          'bisa melewati batasnya. Konflik dibedakan lewat `error.details.reason`: ' +
+          '`full` (kuota habis) atau `duplicate` (email sudah punya kursi).',
+        parameters: [pId('id', 'meetup-12')],
+        requestBody: body(ref('EventRegisterBody')),
+        responses: {
+          201: {
+            description: 'Kursi tercatat',
+            ...json({
+              type: 'object',
+              properties: {
+                ok: { type: 'boolean' },
+                registration: { $ref: '#/components/schemas/EventRegistration' },
+                seatsTaken: { type: 'integer' },
+                seatsLeft: { type: 'integer', nullable: true }
+              }
+            })
+          },
+          404: err('TidakAda'),
+          409: err('Konflik'),
+          422: err('Validasi'),
+          429: err('TerlaluSering')
+        }
+      }
+    },
     '/agenda/state': {
       get: {
         tags: ['Publik'],
@@ -457,6 +501,32 @@ daftar sudah menyimpulkan keduanya, jadi frontend tidak perlu tahu aturannya.
     '/admin/agenda': {
       get: adminOp({ summary: 'Semua agenda', responses: ok('Daftar', arrayOf('AgendaEvent')) }),
       post: adminOp({ summary: 'Tambah agenda', requestBody: body(ref('AgendaEvent')), responses: { 201: { description: 'Dibuat', ...json(ref('AgendaEvent')) } } })
+    },
+    '/admin/agenda/{id}/registrations': {
+      get: adminOp({
+        summary: 'Pendaftar satu acara',
+        parameters: [pId('id', 'meetup-12')],
+        responses: {
+          ...ok('Acara beserta pendaftarnya', {
+            type: 'object',
+            properties: {
+              event: { $ref: '#/components/schemas/AgendaEvent' },
+              registrations: { type: 'array', items: { $ref: '#/components/schemas/EventRegistration' } }
+            }
+          }),
+          404: err('TidakAda')
+        }
+      })
+    },
+    '/admin/agenda/registrations/{id}': {
+      delete: adminOp({
+        summary: 'Batalkan satu kursi',
+        description:
+          'Barisnya tidak dihapus, statusnya jadi `cancelled` — kursinya kembali ke kuota ' +
+          'tapi jejak bahwa orang itu pernah mendaftar tetap ada untuk panitia.',
+        parameters: [pId('id', '0f2c…')],
+        responses: { ...ok('Dibatalkan', { type: 'object', properties: { ok: { type: 'boolean' } } }), 404: err('TidakAda') }
+      })
     },
     '/admin/agenda/{id}': {
       patch: adminOp({ summary: 'Ubah agenda', parameters: [pId('id', 'meetup-12')], requestBody: body(ref('AgendaEvent')), responses: { ...ok('Terbaru', ref('AgendaEvent')), 404: err('TidakAda') } }),

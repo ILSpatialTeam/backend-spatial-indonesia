@@ -19,15 +19,89 @@ const stempel = (iso) => {
   return Date.UTC(y, m - 1, d, 5, 0, 0);
 };
 
-export const toAgendaEvent = (row) => ({
+// `time` dari Postgres datang sebagai 'HH:MM:SS'. Yang dipakai di layar cuma
+// jam dan menit, dan memotongnya di sini berarti tidak ada satu pun tampilan
+// yang perlu tahu bentuk aslinya.
+const jam = (v) => (v ? String(v).slice(0, 5) : null);
+
+// ── keadaan pendaftaran ─────────────────────────────────────────────────────
+//
+// Satu fungsi, dipakai dua kali: untuk memberi tahu pengunjung apakah tombol
+// daftarnya hidup, dan untuk menolak kiriman yang tetap datang walau tombolnya
+// mati. Keduanya HARUS memakai aturan yang sama — kalau tidak, ada keadaan di
+// mana tombolnya menyala tapi kirimannya selalu ditolak, dan pengunjung tidak
+// punya cara menebak kenapa.
+//
+// Alasannya ikut dikembalikan, bukan cuma boolean: "kuota habis" dan
+// "pendaftaran sudah ditutup" perlu kalimat yang berbeda di layar, dan
+// menerjemahkan `false` jadi kalimat yang benar hanya bisa dilakukan di sini.
+export const REG_ALASAN = Object.freeze({
+  buka: 'open',
+  tanpaPendaftaran: 'none',
+  lewat: 'past',
+  ditutup: 'closed',
+  penuh: 'full'
+});
+
+export function registrationState(row, now = Date.now()) {
+  const mode = row.registration ?? 'none';
+  const kapasitas = row.capacity ?? null;
+  // Baris yang tidak membawa hitungan kursi (mis. hasil update yang cuma
+  // RETURNING kolom acara) dianggap nol, bukan NaN.
+  const terpakai = Number(row.seats_taken ?? 0);
+  const sisa = kapasitas === null ? null : Math.max(0, kapasitas - terpakai);
+
+  const nilai = (alasan) => ({ mode, capacity: kapasitas, seatsTaken: terpakai, seatsLeft: sisa, open: alasan === REG_ALASAN.buka, reason: alasan });
+
+  if (mode === 'none') return nilai(REG_ALASAN.tanpaPendaftaran);
+
+  // Acara yang sudah lewat memakai stempel yang sama dengan sudut planetnya:
+  // batasnya akhir hari-H, bukan detik ini. Acara sore hari tidak boleh
+  // menutup pendaftarannya sendiri pada pukul satu siang.
+  if (stempel(row.event_date) + HARI <= now) return nilai(REG_ALASAN.lewat);
+
+  if (row.registration_closes_at && stempel(row.registration_closes_at) + HARI <= now) {
+    return nilai(REG_ALASAN.ditutup);
+  }
+
+  // Kuota hanya kita yang menghitung untuk pendaftaran internal. Acara
+  // 'external' boleh saja berkuota, tapi yang memegang angkanya Google Form —
+  // memasang batas di sini akan menutup tombol yang sebetulnya masih menerima.
+  if (mode === 'internal' && sisa !== null && sisa <= 0) return nilai(REG_ALASAN.penuh);
+
+  return nilai(REG_ALASAN.buka);
+}
+
+export const toAgendaEvent = (row, now = Date.now()) => ({
   id: row.id,
   kind: row.kind,
   title: row.title,
   date: String(row.event_date).slice(0, 10),
+  startsAt: jam(row.starts_at),
+  endsAt: jam(row.ends_at),
   place: row.place,
   note: row.note,
   url: row.url ?? null,
+  // Kartu Event memakai ini untuk memutuskan apakah barisnya bisa dibuka.
+  // Acara tanpa uraian panjang tetap bisa dibuka kalau ia menerima
+  // pendaftaran — halamannya lalu berisi formulirnya saja, dan itu masih
+  // lebih berguna daripada baris yang tampak bisa diklik tapi tidak membuka
+  // apa-apa.
+  hasDetail: !!String(row.description_html ?? '').trim() || (row.registration ?? 'none') !== 'none',
+  registration: registrationState(row, now),
   ...(row.is_published === undefined ? {} : { isPublished: row.is_published })
+});
+
+// Bentuk halaman detail: semua yang di atas, ditambah yang hanya berguna kalau
+// acaranya benar-benar dibuka.
+export const toAgendaDetail = (row, now = Date.now()) => ({
+  ...toAgendaEvent(row, now),
+  address: row.address ?? '',
+  descriptionHtml: row.description_html ?? '',
+  registerUrl: row.register_url ?? null,
+  registrationClosesAt: row.registration_closes_at
+    ? String(row.registration_closes_at).slice(0, 10)
+    : null
 });
 
 export function agendaState(events, now = Date.now()) {

@@ -77,9 +77,16 @@ export class AgendaRepository extends Contract {
   listPublished() { this._abstract('listPublished'); }
   listAll() { this._abstract('listAll'); }
   findById(_id) { this._abstract('findById'); }
+  findPublishedById(_id) { this._abstract('findPublishedById'); }
   create(_data) { this._abstract('create'); }
   update(_id, _patch) { this._abstract('update'); }
   remove(_id) { this._abstract('remove'); }
+  // Pendaftar ikut di sini, bukan di repositori sendiri: satu pendaftaran tidak
+  // punya arti tanpa acaranya, dan penjagaan kuotanya harus terjadi dalam satu
+  // transaksi dengan baris acara yang dikunci.
+  listRegistrations(_eventId) { this._abstract('listRegistrations'); }
+  register(_eventId, _data) { this._abstract('register'); }
+  cancelRegistration(_id) { this._abstract('cancelRegistration'); }
 }
 
 export class PresenceRepository extends Contract {

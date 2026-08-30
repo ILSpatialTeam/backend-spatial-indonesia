@@ -182,18 +182,91 @@ export const menuUpdateBody = z.object(menuBase).partial();
 export const reorderBody = z.object({ order: z.array(idSlug).min(1).max(50) });
 
 // ── agenda (admin) ──────────────────────────────────────────────────────────
-export const agendaCreateBody = z.object({
+const tanggal = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal YYYY-MM-DD.');
+const jam = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Format jam HH:MM.');
+
+// Bentuk dasarnya dipisah dari aturan silangnya dengan sengaja: `.refine()`
+// menghasilkan ZodEffects, dan ZodEffects tidak punya `.partial()`. Kalau
+// keduanya digabung, varian PATCH di bawah tidak bisa dibuat tanpa mengintip
+// isi `_def` — bentuk yang pecah diam-diam saat zod naik versi.
+const agendaBase = z.object({
   id: idSlug.optional(),
   kind: z.string().trim().min(2).max(30),
   title: z.string().trim().min(3).max(200),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal YYYY-MM-DD.'),
+  date: tanggal,
+  startsAt: jam.nullish(),
+  endsAt: jam.nullish(),
   place: z.string().trim().max(120).optional(),
+  address: z.string().trim().max(300).optional(),
   note: z.string().trim().max(600).optional(),
+  // Uraian panjang dari editor WYSIWYG. Batasnya dihitung atas HTML mentah,
+  // jadi longgar: satu paragraf berformat mudah tiga kali lebih panjang
+  // daripada teksnya sendiri.
+  descriptionHtml: z.string().max(20_000).optional(),
   url: z.string().url().max(400).nullish(),
+  registration: z.enum(['none', 'internal', 'external']).optional(),
+  registerUrl: z.string().url().max(400).nullish(),
+  // `coerce` karena formulir dashboard mengirim string. NULL tetap NULL —
+  // itulah "tanpa batas", dan ia harus bisa melewati coerce tanpa jadi 0.
+  capacity: z.coerce.number().int().min(0).max(100_000).nullish(),
+  registrationClosesAt: tanggal.nullish(),
   isPublished: z.boolean().optional()
 });
 
-export const agendaUpdateBody = agendaCreateBody.partial().omit({ id: true });
+// Aturan silang, dipasang ke create dan update lewat satu fungsi supaya
+// keduanya tidak bisa menyimpang. Yang sama juga dijaga CHECK di database;
+// diperiksa di sini juga supaya admin dapat pesan yang menyebut field-nya,
+// bukan nama constraint Postgres.
+//
+// Aturan jam dan tanggal menoleransi field yang tidak ada, karena PATCH boleh
+// mengirim sebagian saja.
+//
+// Yang TIDAK boleh disamakan antara keduanya adalah tautan pendaftaran. Pada
+// pembuatan, acara 'external' tanpa tautan memang tidak sah dan harus ditolak
+// di sini — kalau dibiarkan lolos, yang menolaknya jadi CHECK di database
+// dengan pesan "Nilai melanggar aturan data" yang tidak menyebut field mana
+// pun. Pada perubahan, `registerUrl` yang tidak dikirim berarti "biarkan yang
+// sudah tersimpan", dan itu sah: admin boleh memindahkan acara ke mode
+// external tanpa mengetik ulang tautan yang sudah ada. Kombinasi terakhir itu
+// yang hanya bisa diperiksa database, dan memang di sanalah tempatnya.
+const aturanAgenda = (schema, { tautanWajib }) => schema
+  .refine(
+    (d) => d.registration !== 'external' ||
+      (!tautanWajib && d.registerUrl === undefined) ||
+      !!String(d.registerUrl ?? '').trim(),
+    { path: ['registerUrl'], message: 'Acara dengan pendaftaran pihak ketiga wajib punya tautan.' }
+  )
+  .refine((d) => !d.endsAt || !d.startsAt || d.endsAt > d.startsAt, {
+    path: ['endsAt'], message: 'Jam selesai harus setelah jam mulai.'
+  })
+  .refine((d) => !d.registrationClosesAt || !d.date || d.registrationClosesAt <= d.date, {
+    path: ['registrationClosesAt'], message: 'Penutupan pendaftaran tidak boleh setelah tanggal acara.'
+  });
+
+export const agendaCreateBody = aturanAgenda(
+  // Acara baru tanpa mode pendaftaran dianggap terbuka, sama dengan DEFAULT
+  // kolomnya. Tanpa ini, aturan "external wajib punya tautan" tidak pernah
+  // punya nilai untuk diperiksa saat admin lupa memilih.
+  agendaBase.extend({ registration: z.enum(['none', 'internal', 'external']).default('none') }),
+  { tautanWajib: true }
+);
+
+export const agendaUpdateBody = aturanAgenda(
+  agendaBase.partial().omit({ id: true }),
+  { tautanWajib: false }
+);
+
+// ── pendaftaran acara (publik) ──────────────────────────────────────────────
+//
+// Sengaja pendek. Tiap field tambahan adalah satu alasan lagi untuk menutup
+// formulir tanpa mengisinya, dan panitia selalu bisa menanyakan sisanya lewat
+// email yang sudah dikumpulkan di sini.
+export const eventRegisterBody = z.object({
+  name: z.string().trim().min(2, 'Nama minimal 2 huruf.').max(80),
+  email: z.string().trim().email('Alamat email tidak valid.').max(160),
+  phone: z.string().trim().max(32).optional().default(''),
+  note: z.string().trim().max(500).optional().default('')
+});
 
 // ── tim (admin) ────────────────────────────────────────────────────────────
 export const teamCreateBody = z.object({

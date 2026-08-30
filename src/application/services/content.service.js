@@ -1,6 +1,6 @@
 import { toPlanetShape, toPanelShape } from '../../domain/entities/menu.js';
 import { toArticle } from '../../domain/entities/article.js';
-import { toAgendaEvent, agendaState } from '../../domain/entities/agenda.js';
+import { toAgendaEvent, toAgendaDetail, agendaState } from '../../domain/entities/agenda.js';
 import { toTrail } from '../../domain/entities/presence.js';
 import { NotFoundError } from '../../shared/errors.js';
 import { TAG } from '../../infrastructure/cache/memory-cache.js';
@@ -85,7 +85,7 @@ export class ContentService {
           ),
           articles: artikel.map((row) => toArticle(row, { freshDays })),
           sparing,
-          agenda: acara.map(toAgendaEvent),
+          agenda: acara.map((r) => toAgendaEvent(r)),
           team: tim.map((m) => ({
             id: m.id, name: m.name, role: m.role,
             photoUrl: m.photo_url, sortOrder: m.sort_order
@@ -167,8 +167,27 @@ export class ContentService {
   async agendaList() {
     return this.cache.wrap('agenda', { tags: [TAG.agenda] }, async () => {
       const rows = await this.agenda.listPublished();
-      return rows.map(toAgendaEvent);
+      return rows.map((r) => toAgendaEvent(r));
     });
+  }
+
+  // Detail satu acara. **Sengaja tidak di-cache**, tidak seperti tetangganya
+  // di berkas ini.
+  //
+  // Isinya memuat sisa kursi, dan itu angka yang dipakai pengunjung untuk
+  // memutuskan sesuatu sekarang juga. Menyajikan "sisa 2" yang umurnya semenit
+  // berarti dua orang mendaftar ke kursi yang sama lalu salah satunya ditolak
+  // di langkah terakhir — kegagalan yang paling menjengkelkan justru karena
+  // terjadi setelah formulirnya diisi.
+  //
+  // Satu kueri berindeks per pembukaan halaman detail adalah harga yang jauh
+  // lebih murah daripada itu. Yang tetap boleh basi adalah daftar di kartu
+  // Event (ikut cache bootstrap): di sana angkanya cuma keterangan, bukan dasar
+  // keputusan, dan pendaftarannya sendiri diperiksa ulang di bawah kunci baris.
+  async agendaDetail(id) {
+    const row = await this.agenda.findPublishedById(id);
+    if (!row) throw new NotFoundError('Agenda');
+    return toAgendaDetail(row);
   }
 
   // Keadaan agenda dihitung dari daftar yang sama yang dipakai frontend, lewat

@@ -1,5 +1,6 @@
 import { ConflictError, NotFoundError, RateLimitError, ValidationError } from '../../shared/errors.js';
 import { stripTags } from '../../shared/html.js';
+import { registrationState, REG_ALASAN } from '../../domain/entities/agenda.js';
 import { TAG } from '../../infrastructure/cache/memory-cache.js';
 
 // Segala yang dikirim pengunjung: sparing, jejak kunjungan, pendaftaran Gabung.
@@ -12,8 +13,9 @@ const SEJAM = 3_600_000;
 const MAKS_SPARING_PER_JAM = 5;
 
 export class ParticipationService {
-  constructor({ articles, sparings, presence, submissions, settings, cache }) {
+  constructor({ articles, sparings, presence, submissions, agenda, settings, cache }) {
     this.articles = articles;
+    this.agenda = agenda;
     this.sparings = sparings;
     this.presence = presence;
     this.submissions = submissions;
@@ -130,5 +132,82 @@ export class ParticipationService {
     // Tidak ada id yang dikembalikan. Pengirim tidak membutuhkannya, dan
     // memberikannya berarti membedakan dua jalur yang barusan disamakan.
     return { ok: true, message: 'Terima kasih! Kami hubungi lewat email.' };
+  }
+
+  // ── pendaftaran acara ─────────────────────────────────────────────────────
+  //
+  // Berbeda dengan Gabung di atas, di sini duplikat TIDAK ditelan diam-diam.
+  //
+  // Alasannya kebalikan dari yang di sana. Untuk Gabung, jawaban "sudah
+  // terdaftar" membocorkan keanggotaan seseorang kepada siapa pun yang menebak
+  // alamatnya. Untuk acara, orang yang mendaftar perlu tahu apakah kursinya
+  // benar-benar ada — dan menjawab "berhasil" pada pendaftaran yang tidak
+  // membuat baris apa pun akan membuat orang datang ke acara berkuota tanpa
+  // tempat. Kebocoran yang tersisa ("email X ikut acara Y") ditukar sadar
+  // dengan kepastian itu; acaranya publik, daftar hadirnya tidak rahasia.
+  async registerForEvent({ eventId, name, email, phone, note, ipHash, userAgent }) {
+    const acara = await this.agenda.findPublishedById(eventId);
+    if (!acara) throw new NotFoundError('Agenda');
+
+    const keadaan = registrationState(acara);
+
+    // Diperiksa di sini walau tombolnya di frontend sudah mati. Yang mengirim
+    // POST tidak selalu tombol itu, dan keadaannya bisa berubah antara halaman
+    // dibuka dan formulir dikirim.
+    if (keadaan.mode === 'external') {
+      throw new ValidationError(
+        { registration: 'Pendaftaran acara ini dikelola di luar situs.' },
+        'Acara ini memakai pendaftaran pihak ketiga.'
+      );
+    }
+    if (keadaan.mode === 'none') {
+      throw new ValidationError(
+        { registration: 'Acara ini terbuka, tidak perlu mendaftar.' },
+        'Acara ini tidak memakai pendaftaran.'
+      );
+    }
+    if (!keadaan.open) {
+      const pesan = {
+        [REG_ALASAN.penuh]: 'Kuota acara ini sudah penuh.',
+        [REG_ALASAN.ditutup]: 'Pendaftaran acara ini sudah ditutup.',
+        [REG_ALASAN.lewat]: 'Acara ini sudah lewat.'
+      }[keadaan.reason] ?? 'Pendaftaran acara ini sedang tidak dibuka.';
+      throw new ConflictError(pesan, { reason: keadaan.reason });
+    }
+
+    // Sama seperti sparing: tag dibuang, lalu panjangnya diperiksa ULANG.
+    // Zod sudah memeriksa kiriman mentah, tapi `<b></b>` lolos panjang minimum
+    // dan jadi string kosong setelah dibersihkan.
+    const nama = stripTags(name);
+    const galat = {};
+    if (nama.length < 2) galat.name = 'Nama tidak boleh kosong setelah tag HTML dibuang.';
+    if (Object.keys(galat).length) throw new ValidationError(galat);
+
+    const hasil = await this.agenda.register(eventId, {
+      name: nama,
+      email: String(email).trim().toLowerCase(),
+      phone: stripTags(phone ?? '').slice(0, 32),
+      note: stripTags(note ?? '').slice(0, 500),
+      ipHash,
+      userAgent: userAgent?.slice(0, 300) ?? null
+    });
+
+    // Sisa kursi di kartu Event ikut cache bootstrap. Tanpa pembatalan ini,
+    // angkanya baru menyusul sampai dua menit kemudian — dan "sisa 3" yang
+    // bertahan setelah tiga orang mendaftar adalah persis salah paham yang
+    // membuat orang keempat mengisi formulir untuk ditolak.
+    this.cache.invalidate(TAG.agenda);
+
+    return {
+      ok: true,
+      registration: {
+        id: hasil.registration.id,
+        name: hasil.registration.name,
+        email: hasil.registration.email,
+        at: new Date(hasil.registration.created_at).toISOString()
+      },
+      seatsTaken: hasil.seatsTaken,
+      seatsLeft: hasil.capacity === null ? null : Math.max(0, hasil.capacity - hasil.seatsTaken)
+    };
   }
 }

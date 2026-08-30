@@ -41,6 +41,19 @@ export function makePublicController({ content, participation, presenceHub, sky,
       res.json(await content.agendaNow());
     },
 
+    async agendaDetail(req, res) {
+      res.json(await content.agendaDetail(req.params.id));
+    },
+
+    async registerForEvent(req, res) {
+      res.status(201).json(await participation.registerForEvent({
+        eventId: req.params.id,
+        ...req.body,
+        ipHash: ipHash(req),
+        userAgent: req.get('user-agent')
+      }));
+    },
+
     // Jejak kehadiran tidak boleh di-cache: isinya justru "siapa yang baru
     // saja lewat", dan jawaban semenit lalu sudah salah.
     async presence(req, res) {

@@ -62,6 +62,14 @@ export function makeAdminController({ menuAdmin, articleAdmin, curation, userAdm
     async agendaUpdate(req, res) {
       res.json(await curation.agendaUpdate(req.params.id, req.body, req.actor));
     },
+    async agendaRegistrations(req, res) {
+      res.json(await curation.agendaRegistrations(req.params.id));
+    },
+
+    async agendaRegistrationCancel(req, res) {
+      res.json(await curation.agendaRegistrationCancel(req.params.id, req.actor));
+    },
+
     async agendaDelete(req, res) {
       await curation.agendaRemove(req.params.id, req.actor);
       res.status(204).end();

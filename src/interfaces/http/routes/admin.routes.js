@@ -74,6 +74,13 @@ export function adminRoutes(c, { requireAuth, uploadDir }) {
   r.post('/agenda', validate({ body: S.agendaCreateBody }), ah(c.agendaCreate));
   r.patch('/agenda/:id', validate({ params: S.idParam, body: S.agendaUpdateBody }), ah(c.agendaUpdate));
   r.delete('/agenda/:id', validate({ params: S.idParam }), ah(c.agendaDelete));
+  // Daftar pendaftar satu acara. Rutenya lebih spesifik daripada '/agenda/:id'
+  // di atas, jadi urutannya tidak menimbulkan tabrakan.
+  r.get('/agenda/:id/registrations', validate({ params: S.idParam }), ah(c.agendaRegistrations));
+  // Pembatalan memakai id pendaftaran (uuid), bukan id acara — satu kursi
+  // dibatalkan, bukan seluruh acaranya. Jalurnya sengaja tidak bersarang di
+  // bawah acara supaya tidak ada dua sumber kebenaran soal kursi milik siapa.
+  r.delete('/agenda/registrations/:id', validate({ params: S.uuidParam }), ah(c.agendaRegistrationCancel));
 
   // ── moderasi sparing ──────────────────────────────────────────────────────
   r.get('/sparing', validate({ query: S.moderationQuery }), ah(c.sparingList));

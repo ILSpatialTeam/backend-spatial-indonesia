@@ -25,6 +25,20 @@ export function publicRoutes(c) {
   r.get('/taxonomy', publicCache(300), ah(c.taxonomy));
   r.get('/agenda', publicCache(60), ah(c.agenda));
   r.get('/agenda/state', publicCache(60), ah(c.agendaState));
+  // Detail acara TIDAK di-cache: isinya memuat sisa kursi, dan angka itu jadi
+  // dasar keputusan pengunjung beberapa detik kemudian. Lihat alasan panjangnya
+  // di ContentService#agendaDetail.
+  //
+  // Rutenya berada di bawah '/agenda/state' dengan sengaja — Express mencocokkan
+  // berurutan, dan ':id' di atasnya akan menelan 'state' sebagai id acara.
+  r.get('/agenda/:id', noStore, validate({ params: S.idParam }), ah(c.agendaDetail));
+  r.post(
+    '/agenda/:id/register',
+    noStore,
+    limitKiriman,
+    validate({ params: S.idParam, body: S.eventRegisterBody }),
+    ah(c.registerForEvent)
+  );
   r.get('/settings', publicCache(300), ah(c.settings));
 
   // Langit komunitas. Daftarnya boleh di-cache lama — bintang bertambah
